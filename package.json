@@ -1,0 +1,30 @@
+{
+  "name": "surat-online",
+  "version": "1.0.0",
+  "description": "Sistem pembuatan surat resmi dengan QR Code verifikasi",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "node test.js"
+  },
+  "keywords": [
+    "surat",
+    "pdf",
+    "qrcode",
+    "verification"
+  ],
+  "author": "Your Name",
+  "license": "ISC",
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "mongoose": "^8.0.0",
+    "puppeteer": "^21.5.0",
+    "qrcode": "^1.5.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifikasi Surat - SIPVMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Poppins', sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 min-h-screen">
+    <div class="container mx-auto px-4 py-16">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-white mb-2">Verifikasi Keaslian Surat</h1>
+            <p class="text-blue-200">SIPVMS - Sistem Informasi Surat Sekolah</p>
+        </div>
+
+        <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div id="loading" class="p-12 text-center">
+                <div class="inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="mt-4 text-gray-600">Memverifikasi surat...</p>
+            </div>
+
+            <div id="valid" class="hidden">
+                <div class="bg-green-500 p-6 text-white text-center">
+                    <svg class="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h2 class="text-3xl font-bold">✅ SURAT VALID</h2>
+                    <p>Surat ini ASLI dan terdaftar secara resmi</p>
+                </div>
+                <div id="validContent" class="p-6"></div>
+            </div>
+
+            <div id="invalid" class="hidden">
+                <div class="bg-red-500 p-6 text-white text-center">
+                    <svg class="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h2 class="text-3xl font-bold">❌ SURAT TIDAK VALID</h2>
+                    <p>Surat ini tidak terdaftar atau telah dipalsukan</p>
+                </div>
+                <div class="p-6 text-center">
+                    <p class="text-gray-700">Surat tidak ditemukan dalam database resmi.</p>
+                    <div class="mt-4 p-4 bg-yellow-50 rounded-lg">
+                        <p class="text-sm text-yellow-800">⚠️ Jangan gunakan surat ini untuk keperluan resmi. Hubungi pihak sekolah untuk verifikasi manual.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-gray-50 text-center text-sm text-gray-600 border-t">
+                <p>SIPVMS - SMK Negeri 3 Tuban</p>
+            </div>
+        </div>
+
+        <div class="text-center mt-8">
+            <a href="/" class="inline-block px-6 py-3 bg-white/10 text-white rounded-lg hover:bg-white/20 transition">← Kembali ke Beranda</a>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+        
+        function showValid(data) {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('valid').classList.remove('hidden');
+            document.getElementById('invalid').classList.add('hidden');
+            
+            document.getElementById('validContent').innerHTML = `
+                <div class="space-y-3">
+                    <div class="border-b pb-2">
+                        <p class="text-xs text-gray-500">Nomor Surat</p>
+                        <p class="font-semibold">${data.nomor || '-'}</p>
+                    </div>
+                    <div class="border-b pb-2">
+                        <p class="text-xs text-gray-500">Jenis Surat</p>
+                        <p class="font-semibold">${data.jenis || '-'}</p>
+                    </div>
+                    <div class="border-b pb-2">
+                        <p class="text-xs text-gray-500">Pemohon</p>
+                        <p class="font-semibold">${data.pemohon || '-'}</p>
+                    </div>
+                    <div class="border-b pb-2">
+                        <p class="text-xs text-gray-500">Tanggal</p>
+                        <p class="font-semibold">${new Date(data.tanggal).toLocaleDateString('id-ID')}</p>
+                    </div>
+                    <div class="pt-2">
+                        <p class="text-xs text-gray-500">Isi Surat</p>
+                        <p class="text-sm mt-1 whitespace-pre-wrap">${data.isi || '-'}</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showInvalid() {
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('valid').classList.add('hidden');
+            document.getElementById('invalid').classList.remove('hidden');
+        }
+        
+        // Verifikasi
+        const saved = localStorage.getItem('sipvms_data');
+        if (!id) {
+            showInvalid();
+        } else if (saved) {
+            const data = JSON.parse(saved);
+            const found = data.find(s => s.id === id);
+            if (found && found.status === 'Valid') {
+                showValid(found);
+            } else if (found && found.status === 'Pending') {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('valid').classList.add('hidden');
+                document.getElementById('invalid').classList.remove('hidden');
+                document.querySelector('#invalid .p-6').innerHTML = `
+                    <p class="text-gray-700">Surat ini masih menunggu proses validasi.</p>
+                    <div class="mt-4 p-4 bg-yellow-50 rounded-lg">
+                        <p class="text-sm text-yellow-800">⏳ Status: Menunggu Validasi</p>
+                    </div>
+                `;
+            } else {
+                showInvalid();
+            }
+        } else {
+            showInvalid();
+        }
+    </script>
+</body>
+</html>
