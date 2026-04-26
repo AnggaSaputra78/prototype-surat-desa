@@ -3,38 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verifikasi Surat - SIPVMS</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Verifikasi Surat - SIPVMS Desa Pongpongan</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Poppins', sans-serif; }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #0EA5E9;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-valid { background-color: #D1FAE5; color: #065F46; }
+        .status-pending { background-color: #FEF3C7; color: #92400E; }
+        .status-rejected { background-color: #FEE2E2; color: #991B1B; }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 min-h-screen">
-    <div class="container mx-auto px-4 py-16">
+    <div class="container mx-auto px-4 py-8 md:py-16">
         <div class="text-center mb-8">
+            <div class="inline-block p-4 bg-white/10 backdrop-blur-sm rounded-2xl mb-4">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
             <h1 class="text-3xl font-bold text-white mb-2">Verifikasi Keaslian Surat</h1>
-            <p class="text-blue-200">SIPVMS - Sistem Informasi Surat Sekolah</p>
+            <p class="text-blue-200">SIPVMS - Desa Pongpongan</p>
         </div>
 
         <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <div id="loading" class="p-12 text-center">
-                <div class="inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <!-- Loading State -->
+            <div id="loading-state" class="p-12 text-center">
+                <div class="spinner"></div>
                 <p class="mt-4 text-gray-600">Memverifikasi surat...</p>
+                <p class="text-sm text-gray-400 mt-2">Mohon tunggu sebentar</p>
             </div>
 
-            <div id="valid" class="hidden">
+            <!-- Valid State -->
+            <div id="valid-state" class="hidden">
                 <div class="bg-green-500 p-6 text-white text-center">
-                    <svg class="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-16 h-16 mx-auto mb-2 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     <h2 class="text-3xl font-bold">✅ SURAT VALID</h2>
-                    <p>Surat ini ASLI dan terdaftar secara resmi</p>
+                    <p>Surat ini ASLI dan telah diverifikasi secara resmi</p>
                 </div>
-                <div id="validContent" class="p-6"></div>
+                <div id="valid-content" class="p-6"></div>
+                <div class="px-6 pb-6">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <p class="text-sm text-green-700 flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Surat ini telah diverifikasi secara digital dan sah untuk digunakan.
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            <div id="invalid" class="hidden">
+            <!-- Pending State -->
+            <div id="pending-state" class="hidden">
+                <div class="bg-yellow-500 p-6 text-white text-center">
+                    <svg class="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h2 class="text-3xl font-bold">⏳ BELUM DIVALIDASI</h2>
+                    <p>Surat ini masih menunggu proses validasi</p>
+                </div>
+                <div class="p-6 text-center">
+                    <p class="text-gray-700">Surat ini sudah terdaftar namun belum melalui proses validasi resmi.</p>
+                    <div class="mt-4 p-4 bg-yellow-50 rounded-lg">
+                        <p class="text-sm text-yellow-800">⚠️ Surat ini belum dapat digunakan untuk keperluan resmi. Silakan hubungi petugas desa untuk proses validasi.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Invalid State -->
+            <div id="invalid-state" class="hidden">
                 <div class="bg-red-500 p-6 text-white text-center">
                     <svg class="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -43,89 +102,155 @@
                     <p>Surat ini tidak terdaftar atau telah dipalsukan</p>
                 </div>
                 <div class="p-6 text-center">
-                    <p class="text-gray-700">Surat tidak ditemukan dalam database resmi.</p>
-                    <div class="mt-4 p-4 bg-yellow-50 rounded-lg">
-                        <p class="text-sm text-yellow-800">⚠️ Jangan gunakan surat ini untuk keperluan resmi. Hubungi pihak sekolah untuk verifikasi manual.</p>
+                    <p class="text-gray-700">Surat tidak ditemukan dalam database resmi Desa Pongpongan.</p>
+                    <div class="mt-4 p-4 bg-red-50 rounded-lg">
+                        <p class="text-sm text-red-800">⚠️ Surat ini TIDAK SAH. Jangan gunakan untuk keperluan resmi. Laporkan kepada pihak desa jika menemukan surat ini.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rejected State -->
+            <div id="rejected-state" class="hidden">
+                <div class="bg-red-600 p-6 text-white text-center">
+                    <svg class="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                    </svg>
+                    <h2 class="text-3xl font-bold">❌ SURAT DITOLAK</h2>
+                    <p>Surat ini telah ditolak dan tidak dapat digunakan</p>
+                </div>
+                <div class="p-6 text-center">
+                    <p class="text-gray-700">Surat ini telah melalui proses validasi dan DITOLAK oleh petugas.</p>
+                    <div class="mt-4 p-4 bg-red-50 rounded-lg">
+                        <p class="text-sm text-red-800">⚠️ Surat ini TIDAK SAH dan TIDAK DAPAT DIGUNAKAN untuk keperluan apapun.</p>
                     </div>
                 </div>
             </div>
 
             <div class="p-4 bg-gray-50 text-center text-sm text-gray-600 border-t">
-                <p>SIPVMS - SMK Negeri 3 Tuban</p>
+                <p>SIPVMS - Sistem Informasi Surat Desa Pongpongan</p>
+                <p class="text-xs mt-1">Verifikasi Digital - Keaslian Surat Terjamin</p>
             </div>
         </div>
 
         <div class="text-center mt-8">
-            <a href="/" class="inline-block px-6 py-3 bg-white/10 text-white rounded-lg hover:bg-white/20 transition">← Kembali ke Beranda</a>
+            <a href="/" class="inline-block px-6 py-3 bg-white/10 backdrop-blur-sm text-white rounded-lg hover:bg-white/20 transition-all duration-300">
+                ← Kembali ke Beranda
+            </a>
         </div>
     </div>
 
     <script>
+        // Ambil ID dari URL
         const urlParams = new URLSearchParams(window.location.search);
-        const id = urlParams.get('id');
+        const suratId = urlParams.get('id');
+        
+        function showLoading() {
+            document.getElementById('loading-state').classList.remove('hidden');
+            document.getElementById('valid-state').classList.add('hidden');
+            document.getElementById('pending-state').classList.add('hidden');
+            document.getElementById('invalid-state').classList.add('hidden');
+            document.getElementById('rejected-state').classList.add('hidden');
+        }
         
         function showValid(data) {
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('valid').classList.remove('hidden');
-            document.getElementById('invalid').classList.add('hidden');
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('valid-state').classList.remove('hidden');
+            document.getElementById('pending-state').classList.add('hidden');
+            document.getElementById('invalid-state').classList.add('hidden');
+            document.getElementById('rejected-state').classList.add('hidden');
             
-            document.getElementById('validContent').innerHTML = `
-                <div class="space-y-3">
-                    <div class="border-b pb-2">
-                        <p class="text-xs text-gray-500">Nomor Surat</p>
-                        <p class="font-semibold">${data.nomor || '-'}</p>
+            document.getElementById('valid-content').innerHTML = `
+                <div class="space-y-4">
+                    <div class="border-b pb-3">
+                        <p class="text-xs text-gray-500 uppercase font-semibold">Nomor Surat</p>
+                        <p class="font-semibold text-gray-800 text-lg mt-1">${data.nomor_surat || '-'}</p>
                     </div>
-                    <div class="border-b pb-2">
-                        <p class="text-xs text-gray-500">Jenis Surat</p>
-                        <p class="font-semibold">${data.jenis || '-'}</p>
+                    <div class="border-b pb-3">
+                        <p class="text-xs text-gray-500 uppercase font-semibold">Jenis Surat</p>
+                        <p class="text-gray-800 mt-1">${data.jenis_surat || '-'}</p>
                     </div>
-                    <div class="border-b pb-2">
-                        <p class="text-xs text-gray-500">Pemohon</p>
-                        <p class="font-semibold">${data.pemohon || '-'}</p>
+                    <div class="border-b pb-3">
+                        <p class="text-xs text-gray-500 uppercase font-semibold">Pemohon / Penerima</p>
+                        <p class="text-gray-800 mt-1 font-medium">${data.nama_pemohon || '-'}</p>
                     </div>
-                    <div class="border-b pb-2">
-                        <p class="text-xs text-gray-500">Tanggal</p>
-                        <p class="font-semibold">${new Date(data.tanggal).toLocaleDateString('id-ID')}</p>
+                    <div class="border-b pb-3">
+                        <p class="text-xs text-gray-500 uppercase font-semibold">Tanggal Surat</p>
+                        <p class="text-gray-800 mt-1">${new Date(data.tanggal_surat).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    </div>
+                    <div class="border-b pb-3">
+                        <p class="text-xs text-gray-500 uppercase font-semibold">Divalidasi Oleh</p>
+                        <p class="text-gray-800 mt-1">${data.validator_name || 'Petugas Desa'}</p>
+                    </div>
+                    <div class="border-b pb-3">
+                        <p class="text-xs text-gray-500 uppercase font-semibold">Tanggal Validasi</p>
+                        <p class="text-gray-800 mt-1">${data.tanggal_validasi ? new Date(data.tanggal_validasi).toLocaleString('id-ID') : '-'}</p>
                     </div>
                     <div class="pt-2">
-                        <p class="text-xs text-gray-500">Isi Surat</p>
-                        <p class="text-sm mt-1 whitespace-pre-wrap">${data.isi || '-'}</p>
+                        <p class="text-xs text-gray-500 uppercase font-semibold">Isi Surat</p>
+                        <p class="text-gray-700 mt-2 text-sm whitespace-pre-wrap leading-relaxed bg-gray-50 p-4 rounded-lg">${data.isi_surat || '-'}</p>
                     </div>
                 </div>
             `;
         }
         
-        function showInvalid() {
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('valid').classList.add('hidden');
-            document.getElementById('invalid').classList.remove('hidden');
+        function showPending() {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('valid-state').classList.add('hidden');
+            document.getElementById('pending-state').classList.remove('hidden');
+            document.getElementById('invalid-state').classList.add('hidden');
+            document.getElementById('rejected-state').classList.add('hidden');
         }
         
-        // Verifikasi
-        const saved = localStorage.getItem('sipvms_data');
-        if (!id) {
-            showInvalid();
-        } else if (saved) {
-            const data = JSON.parse(saved);
-            const found = data.find(s => s.id === id);
-            if (found && found.status === 'Valid') {
-                showValid(found);
-            } else if (found && found.status === 'Pending') {
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('valid').classList.add('hidden');
-                document.getElementById('invalid').classList.remove('hidden');
-                document.querySelector('#invalid .p-6').innerHTML = `
-                    <p class="text-gray-700">Surat ini masih menunggu proses validasi.</p>
-                    <div class="mt-4 p-4 bg-yellow-50 rounded-lg">
-                        <p class="text-sm text-yellow-800">⏳ Status: Menunggu Validasi</p>
-                    </div>
-                `;
+        function showInvalid() {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('valid-state').classList.add('hidden');
+            document.getElementById('pending-state').classList.add('hidden');
+            document.getElementById('invalid-state').classList.remove('hidden');
+            document.getElementById('rejected-state').classList.add('hidden');
+        }
+        
+        function showRejected() {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('valid-state').classList.add('hidden');
+            document.getElementById('pending-state').classList.add('hidden');
+            document.getElementById('invalid-state').classList.add('hidden');
+            document.getElementById('rejected-state').classList.remove('hidden');
+        }
+        
+        // Fungsi verifikasi
+        async function verifySurat() {
+            if (!suratId) {
+                showInvalid();
+                return;
+            }
+            
+            // Ambil data dari localStorage (sama dengan data di index.html)
+            const saved = localStorage.getItem('sipvms_surat_data');
+            if (saved) {
+                const data = JSON.parse(saved);
+                const found = data.find(s => s.id === suratId);
+                
+                if (found) {
+                    if (found.status_validasi === 'Valid') {
+                        showValid(found);
+                    } else if (found.status_validasi === 'Pending') {
+                        showPending();
+                    } else if (found.status_validasi === 'Rejected') {
+                        showRejected();
+                    } else {
+                        showInvalid();
+                    }
+                } else {
+                    showInvalid();
+                }
             } else {
                 showInvalid();
             }
-        } else {
-            showInvalid();
         }
+        
+        // Jalankan verifikasi
+        showLoading();
+        setTimeout(verifySurat, 500);
     </script>
 </body>
 </html>
