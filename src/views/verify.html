@@ -21,16 +21,6 @@
             animation: spin 1s linear infinite;
             margin: 0 auto;
         }
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 9999px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-        .status-valid { background-color: #D1FAE5; color: #065F46; }
-        .status-pending { background-color: #FEF3C7; color: #92400E; }
-        .status-rejected { background-color: #FEE2E2; color: #991B1B; }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 min-h-screen">
@@ -102,7 +92,7 @@
                     <p>Surat ini tidak terdaftar atau telah dipalsukan</p>
                 </div>
                 <div class="p-6 text-center">
-                    <p class="text-gray-700">Surat tidak ditemukan dalam database resmi Desa Pongpongan.</p>
+                    <p class="text-gray-700" id="invalid-message">Surat tidak ditemukan dalam database resmi Desa Pongpongan.</p>
                     <div class="mt-4 p-4 bg-red-50 rounded-lg">
                         <p class="text-sm text-red-800">⚠️ Surat ini TIDAK SAH. Jangan gunakan untuk keperluan resmi. Laporkan kepada pihak desa jika menemukan surat ini.</p>
                     </div>
@@ -123,6 +113,26 @@
                     <div class="mt-4 p-4 bg-red-50 rounded-lg">
                         <p class="text-sm text-red-800">⚠️ Surat ini TIDAK SAH dan TIDAK DAPAT DIGUNAKAN untuk keperluan apapun.</p>
                     </div>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="error-state" class="hidden">
+                <div class="bg-gray-500 p-6 text-white text-center">
+                    <svg class="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <h2 class="text-3xl font-bold">⚠️ GAGAL TERHUBUNG</h2>
+                    <p>Tidak dapat terhubung ke server verifikasi</p>
+                </div>
+                <div class="p-6 text-center">
+                    <p class="text-gray-700" id="error-message">Terjadi kesalahan saat menghubungi server.</p>
+                    <div class="mt-4 p-4 bg-yellow-50 rounded-lg">
+                        <p class="text-sm text-yellow-800">Silakan cek koneksi internet Anda atau hubungi administrator.</p>
+                    </div>
+                    <button onclick="window.location.reload()" class="mt-4 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                        Coba Lagi
+                    </button>
                 </div>
             </div>
 
@@ -150,6 +160,7 @@
             document.getElementById('pending-state').classList.add('hidden');
             document.getElementById('invalid-state').classList.add('hidden');
             document.getElementById('rejected-state').classList.add('hidden');
+            document.getElementById('error-state').classList.add('hidden');
         }
         
         function showValid(data) {
@@ -158,6 +169,7 @@
             document.getElementById('pending-state').classList.add('hidden');
             document.getElementById('invalid-state').classList.add('hidden');
             document.getElementById('rejected-state').classList.add('hidden');
+            document.getElementById('error-state').classList.add('hidden');
             
             document.getElementById('valid-content').innerHTML = `
                 <div class="space-y-4">
@@ -187,7 +199,7 @@
                     </div>
                     <div class="pt-2">
                         <p class="text-xs text-gray-500 uppercase font-semibold">Isi Surat</p>
-                        <p class="text-gray-700 mt-2 text-sm whitespace-pre-wrap leading-relaxed bg-gray-50 p-4 rounded-lg">${data.isi_surat || '-'}</p>
+                        <p class="text-gray-700 mt-2 text-sm whitespace-pre-wrap leading-relaxed bg-gray-50 p-4 rounded-lg">${(data.isi_surat || '-').replace(/\n/g, '<br>')}</p>
                     </div>
                 </div>
             `;
@@ -199,14 +211,17 @@
             document.getElementById('pending-state').classList.remove('hidden');
             document.getElementById('invalid-state').classList.add('hidden');
             document.getElementById('rejected-state').classList.add('hidden');
+            document.getElementById('error-state').classList.add('hidden');
         }
         
-        function showInvalid() {
+        function showInvalid(message = 'Surat tidak ditemukan dalam database resmi.') {
             document.getElementById('loading-state').classList.add('hidden');
             document.getElementById('valid-state').classList.add('hidden');
             document.getElementById('pending-state').classList.add('hidden');
             document.getElementById('invalid-state').classList.remove('hidden');
             document.getElementById('rejected-state').classList.add('hidden');
+            document.getElementById('error-state').classList.add('hidden');
+            document.getElementById('invalid-message').textContent = message;
         }
         
         function showRejected() {
@@ -215,42 +230,58 @@
             document.getElementById('pending-state').classList.add('hidden');
             document.getElementById('invalid-state').classList.add('hidden');
             document.getElementById('rejected-state').classList.remove('hidden');
+            document.getElementById('error-state').classList.add('hidden');
         }
         
-        // Fungsi verifikasi
+        function showError(message) {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('valid-state').classList.add('hidden');
+            document.getElementById('pending-state').classList.add('hidden');
+            document.getElementById('invalid-state').classList.add('hidden');
+            document.getElementById('rejected-state').classList.add('hidden');
+            document.getElementById('error-state').classList.remove('hidden');
+            document.getElementById('error-message').textContent = message;
+        }
+        
+        // Fungsi verifikasi - mengambil data dari API backend
         async function verifySurat() {
             if (!suratId) {
-                showInvalid();
+                showInvalid('ID surat tidak ditemukan. QR Code mungkin rusak.');
                 return;
             }
             
-            // Ambil data dari localStorage (sama dengan data di index.html)
-            const saved = localStorage.getItem('sipvms_surat_data');
-            if (saved) {
-                const data = JSON.parse(saved);
-                const found = data.find(s => s.id === suratId);
+            try {
+                // Panggil API verifikasi dari backend
+                const response = await fetch(`/api/surat/verify?id=${suratId}`);
+                const result = await response.json();
                 
-                if (found) {
-                    if (found.status_validasi === 'Valid') {
-                        showValid(found);
-                    } else if (found.status_validasi === 'Pending') {
-                        showPending();
-                    } else if (found.status_validasi === 'Rejected') {
-                        showRejected();
-                    } else {
-                        showInvalid();
-                    }
+                console.log('Verification result:', result); // Debugging
+                
+                if (result.success && result.valid) {
+                    // Surat valid
+                    showValid(result.data);
+                } else if (result.success === false && result.valid === false && result.message === 'TIDAK VALID') {
+                    // Surat tidak valid
+                    showInvalid(result.reason || 'Surat tidak terdaftar dalam database.');
+                } else if (result.data && result.data.status_validasi === 'Pending') {
+                    // Surat pending
+                    showPending();
+                } else if (result.data && result.data.status_validasi === 'Rejected') {
+                    // Surat ditolak
+                    showRejected();
                 } else {
-                    showInvalid();
+                    showInvalid('Surat tidak ditemukan atau belum terdaftar.');
                 }
-            } else {
-                showInvalid();
+                
+            } catch (error) {
+                console.error('Verification error:', error);
+                showError('Gagal terhubung ke server verifikasi. Silakan cek koneksi internet Anda.');
             }
         }
         
         // Jalankan verifikasi
         showLoading();
-        setTimeout(verifySurat, 500);
+        verifySurat();
     </script>
 </body>
 </html>

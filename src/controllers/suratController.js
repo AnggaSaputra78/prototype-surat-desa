@@ -1,78 +1,103 @@
 const Surat = require('../models/Surat');
-const { generateHash, generateQRCode } = require('../utils/generateQR');
-const generatePDF = require('../utils/generatePDF');
-const generateSuratHTML = require('../templates/suratTemplate');
-const path = require('path');
-const fs = require('fs');
+const crypto = require('crypto');
 
-// Buat folder uploads jika belum ada
-const uploadDir = path.join(__dirname, '../../public/uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// Fungsi generate hash
+function generateHash(data) {
+  return crypto.createHash('sha256').update(JSON.stringify(data)).digest('hex');
 }
 
-// Controller: Membuat surat
+// CREATE SURAT - FUNGSI UTAMA
 exports.createSurat = async (req, res) => {
   try {
-    const { nama, nik, jenisSurat, alamat, keperluan } = req.body;
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('📝 [CREATE] Request received di backend');
+    console.log('📦 Request body:', JSON.stringify(req.body, null, 2));
     
-    // 1. Generate unique ID (gunakan timestamp + random)
-    const uniqueId = Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+    const { nama_pemohon, jenis_surat, tanggal_surat, isi_surat } = req.body;
     
-    // 2. Simpan ke database dulu untuk mendapatkan data lengkap
+    // Validasi input
+    if (!nama_pemohon || !jenis_surat || !isi_surat) {
+      console.log('❌ Validasi gagal - field kosong');
+      return res.status(400).json({
+        success: false,
+        message: 'Semua field (nama_pemohon, jenis_surat, isi_surat) wajib diisi'
+      });
+    }
+    
+    // Generate unique ID
+    const uniqueId = Date.now().toString() + '-' + Math.random().toString(36).substr(2, 8);
+    console.log('🆔 Generated ID:', uniqueId);
+    
+    // Generate nomor surat otomatis
+    const kodeSurat = {
+      'Surat Izin': 'SI',
+      'Surat Keterangan': 'SK',
+      'Surat Pengantar': 'SP',
+      'Surat Undangan': 'SU'
+    };
+    const kode = kodeSurat[jenis_surat] || 'SRT';
+    const bulan = String(new Date().getMonth() + 1).padStart(2, '0');
+    const tahun = new Date().getFullYear();
+    
+    // Hitung nomor urut
+    let nomorUrut = 1;
+    try {
+      const count = await Surat.countDocuments({ jenis_surat: jenis_surat });
+      nomorUrut = count + 1;
+      console.log(`📊 Count surat ${jenis_surat}: ${count}, nomor urut: ${nomorUrut}`);
+    } catch (err) {
+      console.log('⚠️ Error counting, menggunakan default 1');
+    }
+    
+    const nomor_surat = `${kode}/${String(nomorUrut).padStart(3, '0')}/${bulan}/${tahun}`;
+    console.log('📄 Nomor surat:', nomor_surat);
+    
+    // Data surat
     const suratData = {
-      nama,
-      nik,
-      jenisSurat,
-      alamat,
-      keperluan,
-      uniqueId,
-      verified: false
+      id: uniqueId,
+      uniqueId: uniqueId,
+      nomor_surat: nomor_surat,
+      nama_pemohon: nama_pemohon,
+      jenis_surat: jenis_surat,
+      tanggal_surat: tanggal_surat || new Date().toISOString().split('T')[0],
+      isi_surat: isi_surat,
+      status_validasi: 'Pending',
+      validator_name: '',
+      tanggal_validasi: '',
+      catatan_validasi: '',
+      qrCode: '',
+      hash: ''
     };
     
-    // 3. Generate hash dari data
-    const hash = generateHash(suratData);
-    suratData.hash = hash;
+    // Generate hash
+    suratData.hash = generateHash(suratData);
     
-    // 4. Generate QR Code
-    const baseUrl = process.env.BASE_URL;
-    const qrResult = await generateQRCode(uniqueId, baseUrl);
-    suratData.qrCode = qrResult.webPath;
-    
-    // 5. Simpan ke MongoDB
+    // Simpan ke MongoDB
+    console.log('💾 Menyimpan ke MongoDB...');
     const surat = new Surat(suratData);
-    await surat.save();
+    const savedSurat = await surat.save();
     
-    // 6. Generate HTML dengan path QR yang benar
-    const htmlContent = generateSuratHTML({
-      nama,
-      nik,
-      jenisSurat,
-      alamat,
-      keperluan,
-      uniqueId,
-      hash,
-      qrCodePath: `http://localhost:3000${qrResult.webPath}` // URL absolut untuk PDF
-    });
+    console.log('✅ SURAT BERHASIL DISIMPAN!');
+    console.log('   MongoDB _id:', savedSurat._id);
+    console.log('   Nomor surat:', savedSurat.nomor_surat);
+    console.log('   Pemohon:', savedSurat.nama_pemohon);
+    console.log('   Status:', savedSurat.status_validasi);
+    console.log('═══════════════════════════════════════════════════════════');
     
-    // 7. Generate PDF
-    const pdfPath = path.join(__dirname, '../../public/uploads', `${uniqueId}.pdf`);
-    await generatePDF(htmlContent, pdfPath);
-    
-    // 8. Response success
     res.status(201).json({
       success: true,
       message: 'Surat berhasil dibuat',
       data: {
         id: uniqueId,
-        pdfUrl: `/public/uploads/${uniqueId}.pdf`,
-        qrUrl: qrResult.webPath,
-        hash: hash
+        nomor_surat: nomor_surat,
+        status: 'Pending',
+        verifyUrl: `/verify?id=${uniqueId}`
       }
     });
     
   } catch (error) {
-    console.error(error);
+    console.error('❌ ERROR CREATE SURAT:', error);
+    console.error('Stack:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Gagal membuat surat',
@@ -81,23 +106,45 @@ exports.createSurat = async (req, res) => {
   }
 };
 
-// Controller: Verifikasi surat
+// GET ALL SURAT
+exports.getAllSurat = async (req, res) => {
+  try {
+    const surats = await Surat.find().sort({ createdAt: -1 });
+    console.log(`📋 Mengambil ${surats.length} surat dari database`);
+    res.json({
+      success: true,
+      data: surats
+    });
+  } catch (error) {
+    console.error('❌ Error GET ALL:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// VERIFY SURAT
 exports.verifySurat = async (req, res) => {
   try {
     const { id } = req.query;
+    console.log('🔍 Verifikasi ID:', id);
     
     if (!id) {
       return res.status(400).json({
         success: false,
-        message: 'ID tidak ditemukan'
+        message: 'ID tidak ditemukan',
+        valid: false
       });
     }
     
-    // Cari surat di database
-    const surat = await Surat.findOne({ uniqueId: id });
+    const surat = await Surat.findOne({ 
+      $or: [{ uniqueId: id }, { id: id }] 
+    });
     
     if (!surat) {
-      return res.status(404).json({
+      console.log('❌ Surat tidak ditemukan');
+      return res.json({
         success: false,
         message: 'TIDAK VALID',
         valid: false,
@@ -105,51 +152,116 @@ exports.verifySurat = async (req, res) => {
       });
     }
     
-    // Re-generate hash untuk verifikasi (cek keaslian)
-    const currentHash = generateHash({
-      nama: surat.nama,
-      nik: surat.nik,
-      jenisSurat: surat.jenisSurat,
-      alamat: surat.alamat,
-      keperluan: surat.keperluan,
-      uniqueId: surat.uniqueId
-    });
+    console.log('📄 Surat ditemukan:', surat.nomor_surat, 'Status:', surat.status_validasi);
     
-    const isValid = (currentHash === surat.hash);
-    
-    if (!isValid) {
+    if (surat.status_validasi === 'Pending') {
       return res.json({
-        success: false,
-        message: 'TIDAK VALID',
+        success: true,
         valid: false,
-        reason: 'Data surat telah dimanipulasi'
+        message: 'BELUM DIVALIDASI',
+        data: surat
       });
     }
     
-    // Update status verifikasi
-    surat.verified = true;
-    await surat.save();
+    if (surat.status_validasi === 'Valid') {
+      return res.json({
+        success: true,
+        message: 'VALID',
+        valid: true,
+        data: surat
+      });
+    }
     
-    // Return data valid
+    if (surat.status_validasi === 'Rejected') {
+      return res.json({
+        success: false,
+        valid: false,
+        message: 'DITOLAK',
+        reason: 'Surat ini telah ditolak oleh petugas'
+      });
+    }
+    
     res.json({
-      success: true,
-      message: 'VALID',
-      valid: true,
-      data: {
-        nama: surat.nama,
-        nik: surat.nik,
-        jenisSurat: surat.jenisSurat,
-        createdAt: surat.createdAt,
-        verifiedAt: new Date()
-      }
+      success: false,
+      message: 'TIDAK VALID',
+      valid: false
     });
     
   } catch (error) {
-    console.error(error);
+    console.error('❌ Error VERIFY:', error);
     res.status(500).json({
       success: false,
       message: 'Terjadi kesalahan verifikasi',
       error: error.message
+    });
+  }
+};
+
+// UPDATE SURAT (untuk validasi)
+exports.updateSurat = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    console.log('📝 Update surat ID:', id);
+    console.log('📦 Data update:', updateData);
+    
+    const surat = await Surat.findOneAndUpdate(
+      { $or: [{ uniqueId: id }, { id: id }] },
+      updateData,
+      { new: true }
+    );
+    
+    if (!surat) {
+      console.log('❌ Surat tidak ditemukan');
+      return res.status(404).json({
+        success: false,
+        message: 'Surat tidak ditemukan'
+      });
+    }
+    
+    console.log('✅ Surat berhasil diupdate, status baru:', surat.status_validasi);
+    res.json({
+      success: true,
+      message: 'Surat berhasil diupdate',
+      data: surat
+    });
+  } catch (error) {
+    console.error('❌ Error UPDATE:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// DELETE SURAT
+exports.deleteSurat = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('🗑️ Hapus surat ID:', id);
+    
+    const surat = await Surat.findOneAndDelete({ 
+      $or: [{ uniqueId: id }, { id: id }] 
+    });
+    
+    if (!surat) {
+      console.log('❌ Surat tidak ditemukan');
+      return res.status(404).json({
+        success: false,
+        message: 'Surat tidak ditemukan'
+      });
+    }
+    
+    console.log('✅ Surat berhasil dihapus');
+    res.json({
+      success: true,
+      message: 'Surat berhasil dihapus'
+    });
+  } catch (error) {
+    console.error('❌ Error DELETE:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
     });
   }
 };

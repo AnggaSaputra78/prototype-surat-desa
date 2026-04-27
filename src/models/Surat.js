@@ -1,41 +1,26 @@
 const mongoose = require('mongoose');
 
 const suratSchema = new mongoose.Schema({
-  // Data surat
-  nama: {
-    type: String,
-    required: true
+  id: { type: String, unique: true },
+  uniqueId: { type: String, unique: true },
+  nomor_surat: { type: String },
+  nama_pemohon: { type: String, required: true },
+  jenis_surat: { type: String, required: true },
+  tanggal_surat: { type: String },
+  isi_surat: { type: String, required: true },
+  status_validasi: { 
+    type: String, 
+    enum: ['Pending', 'Valid', 'Rejected'],
+    default: 'Pending'
   },
-  nik: {
-    type: String,
-    required: true
-  },
-  jenisSurat: {
-    type: String,
-    required: true,
-    enum: ['SKTM', 'SKCK', 'Surat Keterangan Domisili']
-  },
-  alamat: String,
-  keperluan: String,
-  
-  // QR Code & Keamanan
-  qrCode: String,
-  hash: String,
-  uniqueId: {
-    type: String,
-    unique: true
-  },
-  
-  // Status verifikasi
-  verified: {
-    type: Boolean,
-    default: false
-  },
-  
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+  validator_name: { type: String, default: '' },
+  tanggal_validasi: { type: String, default: '' },
+  catatan_validasi: { type: String, default: '' },
+  qrCode: { type: String, default: '' },
+  hash: { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now }
+}, {
+  timestamps: true
 });
 
 module.exports = mongoose.model('Surat', suratSchema);
