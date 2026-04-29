@@ -1,7 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const suratRoutes = require('./routes/suratRoutes');
 const path = require('path');
 const fs = require('fs');
 
@@ -28,198 +27,238 @@ mongoose.connect(MONGODB_URI)
     console.log('✅ MongoDB Connected Successfully!');
     console.log(`📁 Database Name: ${mongoose.connection.name}`);
     console.log(`🔌 Host: ${mongoose.connection.host}`);
-    console.log(`📊 Port: ${mongoose.connection.port}`);
     console.log('═══════════════════════════════════════════════════════════');
   })
   .catch(err => {
     console.error('❌ MongoDB Connection Error:', err.message);
-    console.log('\n📌 Solusi: Jalankan mongod --dbpath C:\\data\\db');
-    console.log('═══════════════════════════════════════════════════════════');
   });
 
-mongoose.connection.on('connected', () => {
-  console.log('🔗 Mongoose terhubung ke MongoDB');
+// ============ MODEL SURAT ============
+const suratSchema = new mongoose.Schema({
+  nomor_surat: { type: String, required: true },
+  jenis_surat: { type: String, required: true },
+  nama_pemohon: { type: String, required: true },
+  tanggal_surat: { type: Date, required: true },
+  isi_surat: { type: String, required: true },
+  status_validasi: { type: String, enum: ['Pending', 'Valid', 'Rejected'], default: 'Pending' },
+  catatan_validasi: { type: String, default: '' },
+  tanggal_validasi: { type: Date },
+  validator_name: { type: String, default: '' },
+  created_at: { type: Date, default: Date.now }
 });
 
-mongoose.connection.on('error', (err) => {
-  console.error('❌ Mongoose connection error:', err);
-});
+const Surat = mongoose.model('Surat', suratSchema);
 
 // ============ ROUTES API ============
-app.use('/api', suratRoutes);
 
-// ============ HALAMAN UTAMA - DASHBOARD ============
-// Ini yang paling penting - arahkan root ke dashboard
+// GET ALL SURAT
+app.get('/api/surat/all', async (req, res) => {
+  try {
+    const surat = await Surat.find().sort({ created_at: -1 });
+    console.log(`📋 Mengambil ${surat.length} surat dari database`);
+    res.json({ success: true, data: surat });
+  } catch (error) {
+    console.error('Error mengambil surat:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// CREATE SURAT
+app.post('/api/surat/create', async (req, res) => {
+  try {
+    const { nomor_surat, jenis_surat, nama_pemohon, tanggal_surat, isi_surat } = req.body;
+    
+    const newSurat = new Surat({
+      nomor_surat,
+      jenis_surat,
+      nama_pemohon,
+      tanggal_surat,
+      isi_surat,
+      status_validasi: 'Pending'
+    });
+    
+    const savedSurat = await newSurat.save();
+    console.log('✅ Surat berhasil dibuat:', savedSurat._id);
+    res.json({ success: true, data: savedSurat });
+  } catch (error) {
+    console.error('Error membuat surat:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 🔥 PERBAIKAN UTAMA - UPDATE SURAT (Menggunakan PUT)
+app.put('/api/surat/update/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('📝 Update surat ID:', id);
+    console.log('📦 Data update:', req.body);
+    
+    // Validasi ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      console.log('❌ ID tidak valid:', id);
+      return res.status(400).json({ success: false, message: 'ID surat tidak valid' });
+    }
+    
+    // Cari surat berdasarkan ID
+    const surat = await Surat.findById(id);
+    
+    if (!surat) {
+      console.log('❌ Surat tidak ditemukan dengan ID:', id);
+      return res.status(404).json({ success: false, message: 'Surat tidak ditemukan' });
+    }
+    
+    // Update data
+    const updateData = {};
+    if (req.body.nomor_surat !== undefined) updateData.nomor_surat = req.body.nomor_surat;
+    if (req.body.jenis_surat !== undefined) updateData.jenis_surat = req.body.jenis_surat;
+    if (req.body.nama_pemohon !== undefined) updateData.nama_pemohon = req.body.nama_pemohon;
+    if (req.body.tanggal_surat !== undefined) updateData.tanggal_surat = req.body.tanggal_surat;
+    if (req.body.isi_surat !== undefined) updateData.isi_surat = req.body.isi_surat;
+    if (req.body.status_validasi !== undefined) updateData.status_validasi = req.body.status_validasi;
+    if (req.body.catatan_validasi !== undefined) updateData.catatan_validasi = req.body.catatan_validasi;
+    if (req.body.tanggal_validasi !== undefined) updateData.tanggal_validasi = req.body.tanggal_validasi;
+    if (req.body.validator_name !== undefined) updateData.validator_name = req.body.validator_name;
+    
+    const updatedSurat = await Surat.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+    
+    console.log('✅ Surat berhasil diupdate. Status baru:', updatedSurat.status_validasi);
+    res.json({ success: true, data: updatedSurat });
+    
+  } catch (error) {
+    console.error('Error update surat:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// DELETE SURAT
+app.delete('/api/surat/delete/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'ID surat tidak valid' });
+    }
+    
+    const deletedSurat = await Surat.findByIdAndDelete(id);
+    
+    if (!deletedSurat) {
+      return res.status(404).json({ success: false, message: 'Surat tidak ditemukan' });
+    }
+    
+    console.log('🗑️ Surat berhasil dihapus:', id);
+    res.json({ success: true, message: 'Surat berhasil dihapus' });
+    
+  } catch (error) {
+    console.error('Error delete surat:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// VERIFY SURAT (untuk QR Code)
+app.get('/api/surat/verify', async (req, res) => {
+  try {
+    const { id } = req.query;
+    console.log('🔍 Verifikasi surat dengan ID:', id);
+    
+    if (!id) {
+      return res.json({ success: false, valid: false, message: 'ID tidak ditemukan' });
+    }
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.json({ success: false, valid: false, message: 'ID tidak valid' });
+    }
+    
+    const surat = await Surat.findById(id);
+    
+    if (!surat) {
+      return res.json({ success: false, valid: false, message: 'TIDAK VALID', reason: 'Surat tidak ditemukan' });
+    }
+    
+    if (surat.status_validasi === 'Valid') {
+      return res.json({ 
+        success: true, 
+        valid: true, 
+        data: {
+          _id: surat._id,
+          nomor_surat: surat.nomor_surat,
+          jenis_surat: surat.jenis_surat,
+          nama_pemohon: surat.nama_pemohon,
+          tanggal_surat: surat.tanggal_surat,
+          isi_surat: surat.isi_surat,
+          status_validasi: surat.status_validasi,
+          validator_name: surat.validator_name,
+          tanggal_validasi: surat.tanggal_validasi
+        }
+      });
+    } else if (surat.status_validasi === 'Pending') {
+      return res.json({ 
+        success: true, 
+        valid: false, 
+        message: 'BELUM DIVALIDASI',
+        data: surat
+      });
+    } else if (surat.status_validasi === 'Rejected') {
+      return res.json({ 
+        success: true, 
+        valid: false, 
+        message: 'DITOLAK',
+        data: surat
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error verifikasi:', error);
+    res.status(500).json({ success: false, valid: false, message: error.message });
+  }
+});
+
+// ============ HALAMAN UTAMA ============
 app.get('/', (req, res) => {
   const indexPath = path.join(__dirname, 'views', 'index.html');
-  console.log('📄 Mencari file:', indexPath);
-  console.log('📄 File exists:', fs.existsSync(indexPath));
-  
   if (fs.existsSync(indexPath)) {
-    console.log('✅ Mengirim file index.html ke browser');
     res.sendFile(indexPath);
   } else {
-    console.log('❌ File index.html TIDAK DITEMUKAN!');
-    res.status(404).send(`
+    res.send(`
       <!DOCTYPE html>
       <html>
-      <head><title>Error - File Tidak Ditemukan</title></head>
+      <head><title>SIPVMS</title></head>
       <body style="font-family: Arial; text-align: center; padding: 50px;">
-        <h1>❌ File Tidak Ditemukan</h1>
-        <p>File <strong>index.html</strong> tidak ditemukan di folder <strong>src/views/</strong></p>
-        <p>Silakan buat file tersebut terlebih dahulu.</p>
-        <p>Path yang dicari: ${indexPath}</p>
+        <h1>🗂️ SIPVMS - Sistem Surat Desa</h1>
+        <p>File index.html tidak ditemukan. Pastikan file berada di folder <strong>src/views/</strong></p>
+        <p>API Server berjalan di port 3001</p>
       </body>
       </html>
     `);
   }
 });
 
-// ============ HALAMAN VERIFIKASI ============
+// HALAMAN VERIFIKASI
 app.get('/verify', (req, res) => {
-  const id = req.query.id;
-  console.log('🔍 Verifikasi diakses dengan ID:', id);
-  
-  res.send(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Verifikasi Surat - SIPVMS</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-        <style>
-            .spinner {
-                width: 40px;
-                height: 40px;
-                border: 3px solid #f3f3f3;
-                border-top: 3px solid #0EA5E9;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-                margin: 20px auto;
-            }
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-        </style>
-    </head>
-    <body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 min-h-screen">
-        <div class="container mx-auto px-4 py-16">
-            <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
-                <div id="loading" class="p-12 text-center">
-                    <div class="spinner"></div>
-                    <p class="mt-4 text-gray-600">Memverifikasi surat...</p>
-                </div>
-                <div id="result" class="hidden"></div>
-            </div>
-            <div class="text-center mt-8">
-                <a href="/" class="inline-block px-6 py-3 bg-white/10 text-white rounded-lg hover:bg-white/20 transition">← Kembali ke Dashboard</a>
-            </div>
-        </div>
-        <script>
-            const id = '${id || ''}';
-            if (!id) {
-                showError('ID Surat tidak ditemukan');
-            } else {
-                fetch('/api/surat/verify?id=' + id)
-                    .then(res => res.json())
-                    .then(data => {
-                        document.getElementById('loading').classList.add('hidden');
-                        if (data.valid === true) {
-                            showValid(data.data);
-                        } else if (data.message === 'BELUM DIVALIDASI') {
-                            showPending();
-                        } else {
-                            showInvalid(data.reason);
-                        }
-                    })
-                    .catch(err => showError('Gagal terhubung ke server'));
-            }
-            
-            function showValid(data) {
-                document.getElementById('result').innerHTML = \`
-                    <div class="bg-green-500 p-6 text-white text-center">
-                        <h2 class="text-3xl font-bold">✅ SURAT VALID</h2>
-                        <p>Surat ini ASLI dan telah diverifikasi</p>
-                    </div>
-                    <div class="p-6">
-                        <div class="space-y-3">
-                            <div class="border-b pb-2"><strong>Nomor Surat:</strong> \${data.nomor_surat || '-'}</div>
-                            <div class="border-b pb-2"><strong>Jenis Surat:</strong> \${data.jenis_surat || '-'}</div>
-                            <div class="border-b pb-2"><strong>Pemohon:</strong> \${data.nama_pemohon || '-'}</div>
-                            <div class="border-b pb-2"><strong>Tanggal:</strong> \${data.tanggal_surat ? new Date(data.tanggal_surat).toLocaleDateString('id-ID') : '-'}</div>
-                            <div><strong>Isi Surat:</strong><br><p class="mt-2 whitespace-pre-wrap">\${data.isi_surat || '-'}</p></div>
-                        </div>
-                    </div>
-                \`;
-                document.getElementById('result').classList.remove('hidden');
-            }
-            
-            function showPending() {
-                document.getElementById('result').innerHTML = \`
-                    <div class="bg-yellow-500 p-6 text-white text-center">
-                        <h2 class="text-3xl font-bold">⏳ BELUM DIVALIDASI</h2>
-                        <p>Surat masih menunggu validasi</p>
-                    </div>
-                \`;
-                document.getElementById('result').classList.remove('hidden');
-            }
-            
-            function showInvalid(reason) {
-                document.getElementById('result').innerHTML = \`
-                    <div class="bg-red-500 p-6 text-white text-center">
-                        <h2 class="text-3xl font-bold">❌ SURAT TIDAK VALID</h2>
-                        <p>\${reason || 'Surat tidak ditemukan'}</p>
-                    </div>
-                \`;
-                document.getElementById('result').classList.remove('hidden');
-            }
-            
-            function showError(msg) {
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('result').innerHTML = \`
-                    <div class="bg-red-500 p-6 text-white text-center">
-                        <h2 class="text-3xl font-bold">❌ ERROR</h2>
-                        <p>\${msg}</p>
-                    </div>
-                \`;
-                document.getElementById('result').classList.remove('hidden');
-            }
-        </script>
-    </body>
-    </html>
-  `);
-});
-
-app.get('/verify-page/:id', (req, res) => {
-  res.redirect(`/verify?id=${req.params.id}`);
-});
-
-// ============ 404 HANDLER ============
-app.use((req, res) => {
-  console.log(`❌ 404 - Endpoint tidak ditemukan: ${req.method} ${req.originalUrl}`);
-  res.status(404).json({
-    success: false,
-    message: 'Endpoint tidak ditemukan',
-    path: req.originalUrl
-  });
-});
-
-// ============ ERROR HANDLER ============
-app.use((err, req, res, next) => {
-  console.error('❌ Server Error:', err.message);
-  res.status(500).json({
-    success: false,
-    message: 'Terjadi kesalahan pada server',
-    error: err.message
-  });
+  const verifyPath = path.join(__dirname, 'views', 'verify.html');
+  if (fs.existsSync(verifyPath)) {
+    res.sendFile(verifyPath);
+  } else {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head><title>Verifikasi Surat</title></head>
+      <body>
+        <h1>Verifikasi Surat</h1>
+        <p>Halaman verifikasi tidak ditemukan.</p>
+      </body>
+      </html>
+    `);
+  }
 });
 
 // ============ START SERVER ============
 const PORT = process.env.PORT || 3001;
 
-const server = app.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log('');
   console.log('╔════════════════════════════════════════════════════════════════╗');
   console.log('║   🚀 SIPVMS - Server Berhasil Dijalankan                           ║');
@@ -228,14 +267,3 @@ const server = app.listen(PORT, () => {
   console.log('╚════════════════════════════════════════════════════════════════╝');
   console.log('');
 });
-
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`\n❌ Port ${PORT} sudah digunakan! Ganti PORT di file .env\n`);
-    process.exit(1);
-  } else {
-    console.error('Server error:', err);
-  }
-});
-
-module.exports = app;

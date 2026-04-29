@@ -1,785 +1,841 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SIPVMS - Sistem Informasi Pengarsipan, Validasi, Pembuatan dan Manajemen Surat Desa</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
-    
-    * { font-family: 'Poppins', sans-serif; }
-    html, body, #app-wrapper { height: 100%; margin: 0; padding: 0; }
-    .slide-in { animation: slideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
-    .fade-in { animation: fadeIn 0.4s ease-in; }
-    .slide-right { animation: slideRight 0.4s ease-out; }
-    @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    @keyframes slideRight { from { transform: translateX(-300px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .gradient-primary { background: linear-gradient(135deg, #0369A1 0%, #0EA5E9 100%); }
-    .gradient-success { background: linear-gradient(135deg, #059669 0%, #10B981 100%); }
-    .gradient-warning { background: linear-gradient(135deg, #D97706 0%, #F59E0B 100%); }
-    .gradient-danger { background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%); }
-    .btn-primary { background: linear-gradient(135deg, #0369A1 0%, #0EA5E9 100%); transition: all 0.3s ease; }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(3, 105, 161, 0.3); }
-    .form-input { border: 2px solid #E5E7EB; transition: all 0.3s ease; }
-    .form-input:focus { border-color: #0369A1; box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1); outline: none; }
-    .badge-valid { background-color: #D1FAE5; color: #065F46; }
-    .badge-pending { background-color: #FEF3C7; color: #92400E; }
-    .badge-rejected { background-color: #FEE2E2; color: #991B1B; }
-    .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
-    .status-dot.valid { background-color: #10B981; }
-    .status-dot.pending { background-color: #F59E0B; }
-    .status-dot.rejected { background-color: #EF4444; }
-    .modal-overlay { display: none; position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.5); z-index: 50; align-items: center; justify-content: center; }
-    .modal-overlay.active { display: flex; }
-    .stat-card { background: linear-gradient(135deg, rgba(3, 105, 161, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%); border-left: 4px solid #0369A1; transition: all 0.3s ease; }
-    .stat-card:hover { transform: translateY(-4px); border-left-color: #0EA5E9; }
-    .letter-card { background: white; border: 1px solid #E5E7EB; border-radius: 0.75rem; transition: all 0.3s ease; }
-    .letter-card:hover { box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08); border-color: #0369A1; }
-    .sidebar-nav-item { transition: all 0.3s ease; cursor: pointer; }
-    .sidebar-nav-item:hover { background-color: rgba(255, 255, 255, 0.15); }
-    .sidebar-nav-item.active { background-color: rgba(255, 255, 255, 0.25); border-left: 4px solid white; }
-    .table-row-hover:hover { background-color: #F0F9FF; }
-    .data-table { width: 100%; border-collapse: collapse; }
-    .data-table th, .data-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #E5E7EB; }
-    .data-table th { background-color: #F9FAFB; font-weight: 600; color: #374151; }
-    .data-table tr:hover { background-color: #F0F9FF; }
-    .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
-    .btn-action { padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
-    .btn-edit { background-color: #F59E0B; color: white; }
-    .btn-edit:hover { background-color: #D97706; }
-    .btn-delete { background-color: #EF4444; color: white; }
-    .btn-delete:hover { background-color: #DC2626; }
-    .btn-pdf { background-color: #8B5CF6; color: white; }
-    .btn-pdf:hover { background-color: #7C3AED; }
-    .btn-view { background-color: #3B82F6; color: white; }
-    .btn-view:hover { background-color: #2563EB; }
-    .status-badge { display: inline-block; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 500; }
-    .status-pending { background-color: #FEF3C7; color: #92400E; }
-    .status-valid { background-color: #D1FAE5; color: #065F46; }
-    .status-rejected { background-color: #FEE2E2; color: #991B1B; }
-
-    /* STYLE PDF SURAT */
-    .print-paper { background: white; padding: 40px; width: 100%; max-width: 800px; margin: 0 auto; font-family: 'Times New Roman', Times, serif; line-height: 1.6; position: relative; }
-    .print-paper .header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid #000; padding-bottom: 15px; }
-    .print-paper .logo-container { display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 10px; }
-    .print-paper .logo-svg { width: 70px; height: 70px; }
-    .print-paper .school-name { font-size: 16px; font-weight: bold; text-transform: uppercase; }
-    .print-paper .school-subname { font-size: 14px; font-weight: bold; margin-top: 3px; }
-    .print-paper .school-address { font-size: 10px; }
-    .print-paper .letter-info { margin: 20px 0; }
-    .print-paper .letter-info table { width: 100%; }
-    .print-paper .letter-info td { padding: 5px 0; }
-    .print-paper .letter-body { text-align: justify; margin: 20px 0; }
-    .print-paper .signature-area { margin-top: 40px; text-align: center; }
-    .print-paper .signature-name { margin-top: 50px; font-weight: bold; text-decoration: underline; }
-    .print-paper .signature-nip { font-size: 11px; margin-top: 5px; }
-    .print-paper .qrcode-corner { position: absolute; bottom: 40px; right: 40px; text-align: center; width: 110px; }
-    .print-paper .qrcode-corner img { width: 90px; height: 90px; display: block; margin: 0 auto; }
-    .print-paper .qrcode-corner p { font-size: 8px; margin-top: 5px; color: #666; }
-    @media print { body * { visibility: hidden; } .print-paper, .print-paper * { visibility: visible; } .print-paper { position: absolute; left: 0; top: 0; width: 100%; background: white; } }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIPVMS - Sistem Informasi Pengarsipan, Validasi, Pembuatan dan Manajemen Surat Desa</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
+        
+        * { font-family: 'Poppins', sans-serif; }
+        html, body, #app-wrapper { height: 100%; margin: 0; padding: 0; }
+        .slide-in { animation: slideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .fade-in { animation: fadeIn 0.4s ease-in; }
+        .slide-right { animation: slideRight 0.4s ease-out; }
+        @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideRight { from { transform: translateX(-300px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .gradient-primary { background: linear-gradient(135deg, #0369A1 0%, #0EA5E9 100%); }
+        .gradient-success { background: linear-gradient(135deg, #059669 0%, #10B981 100%); }
+        .btn-primary { background: linear-gradient(135deg, #0369A1 0%, #0EA5E9 100%); transition: all 0.3s ease; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(3, 105, 161, 0.3); }
+        .form-input { border: 2px solid #E5E7EB; transition: all 0.3s ease; }
+        .form-input:focus { border-color: #0369A1; box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.1); outline: none; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.5); z-index: 50; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .stat-card { background: linear-gradient(135deg, rgba(3, 105, 161, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%); border-left: 4px solid #0369A1; transition: all 0.3s ease; }
+        .stat-card:hover { transform: translateY(-4px); border-left-color: #0EA5E9; }
+        .letter-card { background: white; border: 1px solid #E5E7EB; border-radius: 0.75rem; transition: all 0.3s ease; }
+        .letter-card:hover { box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08); border-color: #0369A1; }
+        .sidebar-nav-item { transition: all 0.3s ease; cursor: pointer; }
+        .sidebar-nav-item:hover { background-color: rgba(255, 255, 255, 0.15); }
+        .sidebar-nav-item.active { background-color: rgba(255, 255, 255, 0.25); border-left: 4px solid white; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th, .data-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #E5E7EB; }
+        .data-table th { background-color: #F9FAFB; font-weight: 600; color: #374151; }
+        .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-action { padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; border: none; }
+        .btn-edit { background-color: #F59E0B; color: white; }
+        .btn-delete { background-color: #EF4444; color: white; }
+        .btn-pdf { background-color: #8B5CF6; color: white; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 500; }
+        .status-pending { background-color: #FEF3C7; color: #92400E; }
+        .status-valid { background-color: #D1FAE5; color: #065F46; }
+        .status-rejected { background-color: #FEE2E2; color: #991B1B; }
+        
+        .print-paper { background: white; padding: 40px; width: 100%; max-width: 800px; margin: 0 auto; font-family: 'Times New Roman', Times, serif; line-height: 1.6; position: relative; box-sizing: border-box; }
+        .kop-surat { text-align: center; margin-bottom: 25px; }
+        .kop-surat h2 { font-weight: bold; font-size: 14px; margin: 0; letter-spacing: 1px; }
+        .kop-surat h3 { font-weight: bold; font-size: 18px; margin: 2px 0; }
+        .kop-surat .desa { font-size: 22px; font-weight: bold; margin: 0; text-transform: uppercase; }
+        .kop-surat .alamat { font-size: 11px; margin-top: 5px; }
+        .garis-kop { border-top: 3px solid #000; border-bottom: 1px solid #000; margin-top: 8px; margin-bottom: 20px; }
+        .judul-surat { text-align: center; margin: 25px 0 20px 0; }
+        .judul-surat h3 { text-decoration: underline; font-size: 18px; font-weight: bold; margin: 0; }
+        .judul-surat p { margin-top: 5px; font-size: 14px; }
+        .ttd { margin-top: 50px; display: flex; justify-content: space-between; }
+        .ttd-left, .ttd-right { width: 45%; }
+        .ttd-right { text-align: center; }
+        .qrcode-container { margin-top: 40px; text-align: center; }
+        .qrcode-container p { font-size: 8px; margin-top: 5px; color: #666; }
+        @media print { body * { visibility: hidden; } .print-paper, .print-paper * { visibility: visible; } .print-paper { position: absolute; left: 0; top: 0; width: 100%; background: white; margin: 0; padding: 40px; } }
+        .toast-notification { position: fixed; bottom: 20px; right: 20px; z-index: 100; animation: slideInRight 0.3s ease; background: #10B981; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .toast-notification.error { background: #EF4444; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
 </head>
 <body class="bg-slate-50 overflow-hidden" id="app-wrapper">
-  <!-- LOGIN SCREEN -->
-  <div id="login-screen" class="h-full w-full flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800">
-    <div class="fade-in w-full max-w-md">
-      <div class="bg-white rounded-2xl shadow-2xl p-8">
-        <div class="text-center mb-8">
-          <div class="inline-block p-4 gradient-primary rounded-2xl mb-4 text-white transform -rotate-12 hover:rotate-0 transition">
-            <i data-lucide="home" class="w-8 h-8"></i>
-          </div>
-          <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">SIPVMS</h1>
-          <p class="text-gray-600 text-sm">Sistem Informasi Pengarsipan, Validasi,<br>Pembuatan dan Manajemen Surat Desa</p>
-          <p class="text-gray-500 text-xs mt-2">Desa Pongpongan</p>
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="h-full w-full flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800">
+        <div class="fade-in w-full max-w-md">
+            <div class="bg-white rounded-2xl shadow-2xl p-8">
+                <div class="text-center mb-8">
+                    <div class="inline-block p-4 gradient-primary rounded-2xl mb-4 text-white transform -rotate-12 hover:rotate-0 transition">
+                        <i data-lucide="home" class="w-8 h-8"></i>
+                    </div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">SIPVMS</h1>
+                    <p class="text-gray-600 text-sm">Sistem Informasi Pengarsipan, Validasi,<br>Pembuatan dan Manajemen Surat Desa</p>
+                    <p class="text-gray-500 text-xs mt-2">Desa Pongpongan</p>
+                </div>
+                <form id="login-form" class="space-y-4" autocomplete="off">
+                    <div><label class="block text-sm font-semibold text-gray-700 mb-2">Username</label> <input type="text" id="username" placeholder="Masukkan username" class="w-full form-input rounded-lg px-4 py-3" required></div>
+                    <div><label class="block text-sm font-semibold text-gray-700 mb-2">Password</label> <input type="password" id="password" placeholder="Masukkan password" class="w-full form-input rounded-lg px-4 py-3" required></div>
+                    <button type="submit" class="w-full btn-primary text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 mt-6"> <i data-lucide="log-in" class="w-5 h-5"></i> Masuk Sistem </button>
+                </form>
+                <div class="mt-6 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p class="text-xs text-blue-700 text-center"><strong>Demo Akses:</strong> Masukkan username & password apapun</p>
+                    <p class="text-xs text-gray-500 text-center mt-2">Backend MERN running di <strong>http://localhost:3001</strong> | Database <strong>suratDB</strong></p>
+                </div>
+            </div>
         </div>
-        <form id="login-form" class="space-y-4" autocomplete="off">
-          <div><label class="block text-sm font-semibold text-gray-700 mb-2">Username</label> <input type="text" id="username" placeholder="Masukkan username" class="w-full form-input rounded-lg px-4 py-3" required></div>
-          <div><label class="block text-sm font-semibold text-gray-700 mb-2">Password</label> <input type="password" id="password" placeholder="Masukkan password" class="w-full form-input rounded-lg px-4 py-3" required></div>
-          <button type="submit" class="w-full btn-primary text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 mt-6"> <i data-lucide="log-in" class="w-5 h-5"></i> Masuk Sistem </button>
-        </form>
-        <div class="mt-6 p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <p class="text-xs text-blue-700 text-center"><strong>Demo Akses:</strong> Masukkan username & password apapun</p>
-        </div>
-      </div>
     </div>
-  </div>
 
-  <!-- MAIN APP -->
-  <div id="main-app" class="h-full w-full hidden flex flex-col">
-    <div class="flex h-full overflow-hidden">
-      <!-- SIDEBAR -->
-      <div class="w-64 gradient-primary text-white shadow-2xl hidden md:flex flex-col slide-right">
-        <div class="p-6 border-b border-sky-400">
-          <div class="flex items-center gap-3">
-            <div class="p-2 bg-white bg-opacity-20 rounded-lg"><i data-lucide="home" class="w-6 h-6"></i></div>
-            <div>
-              <h2 class="font-bold text-sm leading-tight">SIPVMS</h2>
-              <p class="text-xs text-sky-100">Sistem Surat Desa</p>
+    <!-- MAIN APP -->
+    <div id="main-app" class="h-full w-full hidden flex flex-col">
+        <div class="flex h-full overflow-hidden">
+            <!-- SIDEBAR -->
+            <div class="w-64 gradient-primary text-white shadow-2xl hidden md:flex flex-col slide-right">
+                <div class="p-6 border-b border-sky-400">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-white bg-opacity-20 rounded-lg"><i data-lucide="home" class="w-6 h-6"></i></div>
+                        <div>
+                            <h2 class="font-bold text-sm leading-tight">SIPVMS</h2>
+                            <p class="text-xs text-sky-100">Sistem Surat Desa</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-sky-100 mt-2">Desa Pongpongan</p>
+                </div>
+                <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                    <button class="nav-btn sidebar-nav-item w-full text-left px-4 py-3 rounded-lg transition gap-3 flex items-center font-medium" data-view="dashboard"> <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard </button> 
+                    <button class="nav-btn sidebar-nav-item w-full text-left px-4 py-3 rounded-lg transition gap-3 flex items-center font-medium" data-view="buat-surat"> <i data-lucide="file-plus" class="w-5 h-5"></i> Pembuatan Surat </button> 
+                    <button class="nav-btn sidebar-nav-item w-full text-left px-4 py-3 rounded-lg transition gap-3 flex items-center font-medium" data-view="validasi"> <i data-lucide="clipboard-check" class="w-5 h-5"></i> Validasi Surat </button> 
+                    <button class="nav-btn sidebar-nav-item w-full text-left px-4 py-3 rounded-lg transition gap-3 flex items-center font-medium" data-view="arsip"> <i data-lucide="folder-archive" class="w-5 h-5"></i> Pengarsipan Surat </button> 
+                    <button class="nav-btn sidebar-nav-item w-full text-left px-4 py-3 rounded-lg transition gap-3 flex items-center font-medium" data-view="manajemen"> <i data-lucide="settings" class="w-5 h-5"></i> Manajemen Surat </button>
+                </nav>
+                <div class="p-4 border-t border-sky-400">
+                    <div class="bg-white bg-opacity-15 rounded-lg p-3 mb-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="user-circle" class="w-8 h-8"></i>
+                            <div>
+                                <p class="text-sm font-semibold" id="user-display">Admin Desa</p>
+                                <p class="text-xs text-sky-100">Pengguna Aktif</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="logout-btn" class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold flex items-center justify-center gap-2 transition"> <i data-lucide="log-out" class="w-4 h-4"></i> Keluar </button>
+                </div>
             </div>
-          </div>
-          <p class="text-xs text-sky-100 mt-2">Desa Pongpongan</p>
+
+            <!-- MAIN CONTENT -->
+            <div class="flex-1 flex flex-col overflow-hidden">
+                <div class="bg-white border-b border-gray-200 shadow-sm px-4 md:px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <h1 id="page-title" class="text-xl md:text-2xl font-bold text-gray-800">Dashboard</h1>
+                    </div>
+                    <div class="hidden md:flex items-center gap-4">
+                        <div class="text-sm text-gray-600"><i data-lucide="calendar" class="w-4 h-4 inline mr-1"></i> <span id="current-date"></span></div>
+                        <button id="logout-btn-top" class="p-2 hover:bg-gray-100 rounded-lg text-gray-700"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4 md:p-8">
+                    <!-- DASHBOARD VIEW -->
+                    <div id="dashboard-view" class="space-y-6 slide-in">
+                        <div class="gradient-primary rounded-2xl p-6 md:p-8 text-white shadow-lg">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h2 class="text-2xl md:text-3xl font-bold mb-2">Sistem Informasi Pengarsipan, Validasi,<br>Pembuatan dan Manajemen Surat Desa Pongpongan</h2>
+                                    <p class="text-sky-100">Kelola pembuatan, validasi, pengarsipan, dan manajemen surat secara terintegrasi</p>
+                                </div>
+                                <i data-lucide="files" class="w-16 h-16 text-sky-200 opacity-50"></i>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="stat-card rounded-xl p-6 shadow-sm"><div><p class="text-gray-600 text-sm font-semibold">Total Surat</p><p id="stat-total" class="text-3xl font-bold text-gray-900 mt-2">0</p></div></div>
+                            <div class="stat-card rounded-xl p-6 shadow-sm"><div><p class="text-gray-600 text-sm font-semibold">Menunggu Validasi</p><p id="stat-pending" class="text-3xl font-bold text-gray-900 mt-2">0</p></div></div>
+                            <div class="stat-card rounded-xl p-6 shadow-sm"><div><p class="text-gray-600 text-sm font-semibold">Tervalidasi</p><p id="stat-valid" class="text-3xl font-bold text-gray-900 mt-2">0</p></div></div>
+                            <div class="stat-card rounded-xl p-6 shadow-sm"><div><p class="text-gray-600 text-sm font-semibold">Ditolak</p><p id="stat-rejected" class="text-3xl font-bold text-gray-900 mt-2">0</p></div></div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <button class="nav-btn bg-white border-2 border-dashed border-sky-300 rounded-xl p-6 hover:border-sky-500 hover:bg-sky-50 transition text-left" data-view="buat-surat"><div class="p-3 bg-sky-100 rounded-lg w-fit mb-3"><i data-lucide="file-plus" class="w-6 h-6 text-sky-600"></i></div><h3 class="font-bold text-gray-800">Pembuatan Surat</h3><p class="text-sm text-gray-600 mt-1">Buat surat baru dengan mudah</p></button>
+                            <button class="nav-btn bg-white border-2 border-dashed border-amber-300 rounded-xl p-6 hover:border-amber-500 hover:bg-amber-50 transition text-left" data-view="validasi"><div class="p-3 bg-amber-100 rounded-lg w-fit mb-3"><i data-lucide="clipboard-check" class="w-6 h-6 text-amber-600"></i></div><h3 class="font-bold text-gray-800">Validasi Surat</h3><p class="text-sm text-gray-600 mt-1">Proses validasi surat masuk</p></button>
+                            <button class="nav-btn bg-white border-2 border-dashed border-emerald-300 rounded-xl p-6 hover:border-emerald-500 hover:bg-emerald-50 transition text-left" data-view="arsip"><div class="p-3 bg-emerald-100 rounded-lg w-fit mb-3"><i data-lucide="folder-archive" class="w-6 h-6 text-emerald-600"></i></div><h3 class="font-bold text-gray-800">Pengarsipan Surat</h3><p class="text-sm text-gray-600 mt-1">Akses arsip surat lengkap</p></button>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm p-6"><h3 class="text-lg font-bold text-gray-800 mb-4">Surat Terbaru</h3><div id="recent-letters" class="space-y-3"></div></div>
+                    </div>
+
+                    <!-- PEMBUATAN SURAT VIEW -->
+                    <div id="buat-surat-view" class="hidden max-w-3xl mx-auto">
+                        <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+                            <div class="mb-6"><h2 class="text-2xl font-bold text-gray-800 mb-2">Form Pembuatan Surat Desa</h2><p class="text-gray-600">Pilih jenis surat, maka nomor surat dan template isi akan terisi otomatis</p></div>
+                            <form id="buat-surat-form" class="space-y-5">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div><label class="block text-sm font-semibold text-gray-700 mb-2">Nomor Surat</label><input type="text" id="nomor-surat" class="w-full form-input rounded-lg px-4 py-3 bg-gray-50" readonly></div>
+                                    <div><label class="block text-sm font-semibold text-gray-700 mb-2">Tanggal Surat</label><input type="date" id="tanggal-surat" class="w-full form-input rounded-lg px-4 py-3" required></div>
+                                </div>
+                                <div><label class="block text-sm font-semibold text-gray-700 mb-2">Nama Pemohon / Penerima</label><input type="text" id="nama-pemohon" class="w-full form-input rounded-lg px-4 py-3" required></div>
+                                <div><label class="block text-sm font-semibold text-gray-700 mb-2">Jenis Surat</label>
+                                    <select id="jenis-surat" class="w-full form-input rounded-lg px-4 py-3" required>
+                                        <option value="">Pilih Jenis Surat</option>
+                                        <option value="Surat Keterangan Usaha">Surat Keterangan Usaha</option>
+                                        <option value="Surat Permohonan Pinjam Lahan">Surat Permohonan Pinjam Lahan</option>
+                                        <option value="Surat Keterangan Domisili">Surat Keterangan Domisili</option>
+                                        <option value="Surat Keterangan Dispensasi">Surat Keterangan Dispensasi</option>
+                                    </select>
+                                </div>
+                                <div><label class="block text-sm font-semibold text-gray-700 mb-2">Isi / Detail Surat</label><textarea id="isi-surat" rows="10" class="w-full form-input rounded-lg px-4 py-3" required></textarea></div>
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4"><p class="text-sm text-blue-700">Nomor surat dan isi surat akan terisi otomatis berdasarkan jenis surat yang dipilih.</p></div>
+                                <div class="flex gap-3 pt-4"><button type="submit" class="flex-1 btn-primary text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2"><i data-lucide="save" class="w-5 h-5"></i> Simpan Surat</button><button type="button" class="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition nav-btn" data-view="dashboard">Batal</button></div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- VALIDASI VIEW -->
+                    <div id="validasi-view" class="hidden"><div class="bg-white rounded-xl shadow-lg p-6"><h2 class="text-2xl font-bold mb-4">Validasi Surat</h2><div id="validation-list" class="space-y-4"></div></div></div>
+
+                    <!-- PENGARSIPAN SURAT VIEW -->
+                    <div id="arsip-view" class="hidden">
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <div class="flex justify-between items-center mb-4 flex-wrap gap-3">
+                                <h2 class="text-2xl font-bold text-gray-800">📁 Arsip Surat Desa</h2>
+                                <input type="text" id="search-arsip" placeholder="🔍 Cari nomor/pemohon..." class="form-input rounded-lg px-4 py-2 w-64 border border-gray-300">
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm md:text-base">
+                                    <thead class="bg-gray-100 border-b-2 border-gray-300">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left">No Surat</th>
+                                            <th class="px-4 py-3 text-left">Pemohon</th>
+                                            <th class="px-4 py-3 text-left">Jenis Surat</th>
+                                            <th class="px-4 py-3 text-left">Tanggal</th>
+                                            <th class="px-4 py-3 text-left">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="arsip-table-body">
+                                        <tr><td colspan="5" class="text-center py-8 text-gray-500">Memuat data...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MANAJEMEN SURAT VIEW -->
+                    <div id="manajemen-view" class="p-4 md:p-8 hidden slide-in">
+                        <div class="max-w-6xl mx-auto">
+                            <div class="bg-white rounded-xl shadow-lg p-6">
+                                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                                    <div>
+                                        <h2 class="text-2xl font-bold text-gray-800">⚙️ Manajemen Surat</h2>
+                                        <p class="text-gray-600 text-sm mt-1">Kelola, edit, cetak PDF, atau hapus data surat</p>
+                                    </div>
+                                    <input type="text" id="search-manajemen" placeholder="🔍 Cari surat..." 
+                                          class="form-input rounded-lg px-4 py-2 w-full md:w-64 border border-gray-300 focus:ring-2 focus:ring-purple-400">
+                                </div>
+                                
+                                <div id="manajemen-table-container" class="overflow-x-auto">
+                                    <table class="w-full text-sm md:text-base border-collapse">
+                                        <thead class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-t-lg">
+                                            <tr class="border-b-2 border-purple-200">
+                                                <th class="px-4 py-3 text-left font-semibold text-gray-700">No</th>
+                                                <th class="px-4 py-3 text-left font-semibold text-gray-700">Nomor Surat</th>
+                                                <th class="px-4 py-3 text-left font-semibold text-gray-700">Pemohon</th>
+                                                <th class="px-4 py-3 text-left font-semibold text-gray-700">Jenis Surat</th>
+                                                <th class="px-4 py-3 text-left font-semibold text-gray-700">Tanggal</th>
+                                                <th class="px-4 py-3 text-center font-semibold text-gray-700">Status</th>
+                                                <th class="px-4 py-3 text-center font-semibold text-gray-700">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="manajemen-table-body">
+                                            <tr>
+                                                <td colspan="7" class="text-center py-10 text-gray-400">
+                                                    <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                    </svg>
+                                                    <p>Belum ada data surat</p>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-200 text-sm">
+                                    <span class="text-gray-500">Menampilkan <span id="manajemen-dari">0</span> - <span id="manajemen-sampai">0</span> dari <span id="manajemen-total">0</span> data</span>
+                                    <div class="flex gap-2">
+                                        <button id="prev-manajemen" class="px-3 py-1 border rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition" disabled>← Sebelumnya</button>
+                                        <button id="next-manajemen" class="px-3 py-1 border rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition" disabled>Selanjutnya →</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> 
+                </div>
+            </div>
         </div>
-        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-          <button class="nav-btn sidebar-nav-item w-full text-left px-4 py-3 rounded-lg transition gap-3 flex items-center font-medium" data-view="dashboard"> <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard </button> 
-          <button class="nav-btn sidebar-nav-item w-full text-left px-4 py-3 rounded-lg transition gap-3 flex items-center font-medium" data-view="buat-surat"> <i data-lucide="file-plus" class="w-5 h-5"></i> Pembuatan Surat </button> 
-          <button class="nav-btn sidebar-nav-item w-full text-left px-4 py-3 rounded-lg transition gap-3 flex items-center font-medium" data-view="validasi"> <i data-lucide="clipboard-check" class="w-5 h-5"></i> Validasi Surat </button> 
-          <button class="nav-btn sidebar-nav-item w-full text-left px-4 py-3 rounded-lg transition gap-3 flex items-center font-medium" data-view="arsip"> <i data-lucide="folder-archive" class="w-5 h-5"></i> Pengarsipan Surat </button> 
-          <button class="nav-btn sidebar-nav-item w-full text-left px-4 py-3 rounded-lg transition gap-3 flex items-center font-medium" data-view="manajemen"> <i data-lucide="settings" class="w-5 h-5"></i> Manajemen Surat </button>
-        </nav>
-        <div class="p-4 border-t border-sky-400">
-          <div class="bg-white bg-opacity-15 rounded-lg p-3 mb-3">
-            <div class="flex items-center gap-2">
-              <i data-lucide="user-circle" class="w-8 h-8"></i>
-              <div>
-                <p class="text-sm font-semibold" id="user-display">Admin Desa</p>
-                <p class="text-xs text-sky-100">Pengguna Aktif</p>
-              </div>
-            </div>
-          </div>
-          <button id="logout-btn" class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white font-semibold flex items-center justify-center gap-2 transition"> <i data-lucide="log-out" class="w-4 h-4"></i> Keluar </button>
-        </div>
-      </div>
-
-      <!-- MAIN CONTENT -->
-      <div class="flex-1 flex flex-col overflow-hidden">
-        <div class="bg-white border-b border-gray-200 shadow-sm px-4 md:px-6 py-4 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <button id="menu-toggle" class="md:hidden p-2 hover:bg-gray-100 rounded-lg"><i data-lucide="menu" class="w-6 h-6 text-gray-700"></i></button>
-            <h1 id="page-title" class="text-xl md:text-2xl font-bold text-gray-800">Dashboard</h1>
-          </div>
-          <div class="hidden md:flex items-center gap-4">
-            <div class="text-sm text-gray-600"><i data-lucide="calendar" class="w-4 h-4 inline mr-1"></i> <span id="current-date"></span></div>
-            <button id="logout-btn-top" class="p-2 hover:bg-gray-100 rounded-lg text-gray-700"><i data-lucide="log-out" class="w-5 h-5"></i></button>
-          </div>
-        </div>
-        <div class="flex-1 overflow-y-auto p-4 md:p-8">
-          <!-- DASHBOARD VIEW -->
-          <div id="dashboard-view" class="space-y-6 slide-in">
-            <div class="gradient-primary rounded-2xl p-6 md:p-8 text-white shadow-lg">
-              <div class="flex items-start justify-between">
-                <div>
-                  <h2 class="text-2xl md:text-3xl font-bold mb-2">Sistem Informasi Pengarsipan, Validasi,<br>Pembuatan dan Manajemen Surat Desa Pongpongan</h2>
-                  <p class="text-sky-100">Kelola pembuatan, validasi, pengarsipan, dan manajemen surat secara terintegrasi</p>
-                </div>
-                <i data-lucide="files" class="w-16 h-16 text-sky-200 opacity-50"></i>
-              </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div class="stat-card rounded-xl p-6 shadow-sm">
-                <div class="flex items-start justify-between">
-                  <div><p class="text-gray-600 text-sm font-semibold">Total Surat</p><p id="stat-total" class="text-3xl font-bold text-gray-900 mt-2">0</p></div>
-                  <div class="p-3 bg-blue-100 rounded-lg"><i data-lucide="mail" class="w-6 h-6 text-blue-600"></i></div>
-                </div>
-              </div>
-              <div class="stat-card rounded-xl p-6 shadow-sm">
-                <div class="flex items-start justify-between">
-                  <div><p class="text-gray-600 text-sm font-semibold">Menunggu Validasi</p><p id="stat-pending" class="text-3xl font-bold text-gray-900 mt-2">0</p></div>
-                  <div class="p-3 bg-yellow-100 rounded-lg"><i data-lucide="clock" class="w-6 h-6 text-yellow-600"></i></div>
-                </div>
-              </div>
-              <div class="stat-card rounded-xl p-6 shadow-sm">
-                <div class="flex items-start justify-between">
-                  <div><p class="text-gray-600 text-sm font-semibold">Tervalidasi</p><p id="stat-valid" class="text-3xl font-bold text-gray-900 mt-2">0</p></div>
-                  <div class="p-3 bg-green-100 rounded-lg"><i data-lucide="check-circle" class="w-6 h-6 text-green-600"></i></div>
-                </div>
-              </div>
-              <div class="stat-card rounded-xl p-6 shadow-sm">
-                <div class="flex items-start justify-between">
-                  <div><p class="text-gray-600 text-sm font-semibold">Ditolak</p><p id="stat-rejected" class="text-3xl font-bold text-gray-900 mt-2">0</p></div>
-                  <div class="p-3 bg-red-100 rounded-lg"><i data-lucide="x-circle" class="w-6 h-6 text-red-600"></i></div>
-                </div>
-              </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <button class="nav-btn bg-white border-2 border-dashed border-sky-300 rounded-xl p-6 hover:border-sky-500 hover:bg-sky-50 transition text-left" data-view="buat-surat"><div class="p-3 bg-sky-100 rounded-lg w-fit mb-3"><i data-lucide="file-plus" class="w-6 h-6 text-sky-600"></i></div><h3 class="font-bold text-gray-800">Pembuatan Surat</h3><p class="text-sm text-gray-600 mt-1">Buat surat baru dengan mudah</p></button>
-              <button class="nav-btn bg-white border-2 border-dashed border-amber-300 rounded-xl p-6 hover:border-amber-500 hover:bg-amber-50 transition text-left" data-view="validasi"><div class="p-3 bg-amber-100 rounded-lg w-fit mb-3"><i data-lucide="clipboard-check" class="w-6 h-6 text-amber-600"></i></div><h3 class="font-bold text-gray-800">Validasi Surat</h3><p class="text-sm text-gray-600 mt-1">Proses validasi surat masuk</p></button>
-              <button class="nav-btn bg-white border-2 border-dashed border-emerald-300 rounded-xl p-6 hover:border-emerald-500 hover:bg-emerald-50 transition text-left" data-view="arsip"><div class="p-3 bg-emerald-100 rounded-lg w-fit mb-3"><i data-lucide="folder-archive" class="w-6 h-6 text-emerald-600"></i></div><h3 class="font-bold text-gray-800">Pengarsipan Surat</h3><p class="text-sm text-gray-600 mt-1">Akses arsip surat lengkap</p></button>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm p-6"><h3 class="text-lg font-bold text-gray-800 mb-4">Surat Terbaru</h3><div id="recent-letters" class="space-y-3"></div></div>
-          </div>
-
-          <!-- PEMBUATAN SURAT VIEW -->
-          <div id="buat-surat-view" class="hidden max-w-3xl mx-auto">
-            <div class="bg-white rounded-xl shadow-lg p-6 md:p-8">
-              <div class="mb-6"><h2 class="text-2xl font-bold text-gray-800 mb-2">Form Pembuatan Surat Desa</h2><p class="text-gray-600">Pilih jenis surat, maka nomor surat dan template isi akan terisi otomatis (dapat diedit)</p></div>
-              <form id="buat-surat-form" class="space-y-5">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div><label class="block text-sm font-semibold text-gray-700 mb-2"><i data-lucide="hash" class="w-4 h-4 inline mr-2 text-sky-600"></i> Nomor Surat</label><input type="text" id="nomor-surat" class="w-full form-input rounded-lg px-4 py-3 bg-gray-50" readonly></div>
-                  <div><label class="block text-sm font-semibold text-gray-700 mb-2"><i data-lucide="calendar" class="w-4 h-4 inline mr-2 text-sky-600"></i> Tanggal Surat</label><input type="date" id="tanggal-surat" class="w-full form-input rounded-lg px-4 py-3" required></div>
-                </div>
-                <div><label class="block text-sm font-semibold text-gray-700 mb-2"><i data-lucide="user" class="w-4 h-4 inline mr-2 text-sky-600"></i> Nama Pemohon / Penerima</label><input type="text" id="nama-pemohon" placeholder="Nama pemohon atau penerima surat" class="w-full form-input rounded-lg px-4 py-3" required></div>
-                <div><label class="block text-sm font-semibold text-gray-700 mb-2"><i data-lucide="tag" class="w-4 h-4 inline mr-2 text-sky-600"></i> Perihal / Jenis Surat</label>
-                  <select id="jenis-surat" class="w-full form-input rounded-lg px-4 py-3" required>
-                    <option value="">Pilih Jenis Surat</option>
-                    <option value="Surat Izin">Surat Izin (SI)</option>
-                    <option value="Surat Keterangan">Surat Keterangan (SK)</option>
-                    <option value="Surat Pengantar">Surat Pengantar (SP)</option>
-                    <option value="Surat Undangan">Surat Undangan (SU)</option>
-                  </select>
-                </div>
-                <div><div class="flex justify-between items-center mb-2"><label class="block text-sm font-semibold text-gray-700"><i data-lucide="file-text" class="w-4 h-4 inline mr-2 text-sky-600"></i> Isi / Detail Surat</label><span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">Template terisi otomatis, bisa diedit</span></div><textarea id="isi-surat" placeholder="Pilih jenis surat terlebih dahulu..." rows="10" class="w-full form-input rounded-lg px-4 py-3" required></textarea></div>
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4"><p class="text-sm text-blue-700"><i data-lucide="info" class="w-4 h-4 inline mr-2"></i> Nomor surat dan isi surat akan terisi otomatis berdasarkan jenis surat yang dipilih.</p></div>
-                <div class="flex gap-3 pt-4"><button type="submit" class="flex-1 btn-primary text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition"><i data-lucide="save" class="w-5 h-5"></i> Simpan Surat</button><button type="button" class="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-50 transition nav-btn" data-view="dashboard"><i data-lucide="x" class="w-5 h-5 inline mr-2"></i> Batal</button></div>
-              </form>
-            </div>
-          </div>
-
-          <!-- VALIDASI VIEW -->
-          <div id="validasi-view" class="hidden">
-            <div class="bg-white rounded-xl shadow-lg p-6"><div class="mb-6"><h2 class="text-2xl font-bold text-gray-800 mb-2">Validasi Surat</h2><p class="text-gray-600">Tinjau dan lakukan validasi terhadap surat yang masuk</p></div><div id="validation-list" class="space-y-4"></div></div>
-          </div>
-
-          <!-- PENGARSIPAN SURAT VIEW -->
-          <div id="arsip-view" class="hidden">
-            <div class="bg-white rounded-xl shadow-lg p-6"><div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6"><div><h2 class="text-2xl font-bold text-gray-800">📁 Pengarsipan Surat</h2><p class="text-gray-600 text-sm mt-1">Daftar lengkap arsip surat terintegrasi</p></div><div class="relative"><i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"></i><input type="text" id="search-arsip" placeholder="Cari surat..." class="form-input rounded-lg pl-10 pr-4 py-2 w-full md:w-64"></div></div><div id="arsip-table-container" class="overflow-x-auto"><table class="data-table"><thead><tr><th>No Surat</th><th>Pemohon</th><th>Jenis Surat</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="arsip-table-body"><tr><td colspan="6" class="text-center py-8 text-gray-500">Loading...</td></tr></tbody></table></div></div>
-          </div>
-
-          <!-- MANAJEMEN SURAT VIEW -->
-          <div id="manajemen-view" class="hidden">
-            <div class="bg-white rounded-xl shadow-lg p-6"><div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6"><div><h2 class="text-2xl font-bold text-gray-800">⚙️ Manajemen Surat</h2><p class="text-gray-600 text-sm mt-1">Kelola, edit, cetak PDF, atau hapus data surat</p></div><div class="relative"><i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"></i><input type="text" id="search-manajemen" placeholder="Cari surat..." class="form-input rounded-lg pl-10 pr-4 py-2 w-full md:w-64"></div></div><div id="manajemen-table-container" class="overflow-x-auto"><table class="data-table"><thead><tr><th>No Surat</th><th>Pemohon</th><th>Jenis Surat</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="manajemen-table-body"><tr><td colspan="5" class="text-center py-8 text-gray-500">Loading...</td></tr></tbody></table></div></div>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
 
-  <!-- MODALS -->
-  <div id="edit-modal" class="modal-overlay"><div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 p-6 md:p-8 max-h-[90vh] overflow-y-auto"><div class="flex items-center justify-between mb-6"><h2 class="text-2xl font-bold text-gray-800">Edit Data Surat</h2><button onclick="closeEditModal()" class="p-2 hover:bg-gray-100 rounded-lg"><i data-lucide="x" class="w-6 h-6 text-gray-600"></i></button></div><form id="edit-surat-form" class="space-y-5"><input type="hidden" id="edit-id"><div class="grid grid-cols-1 md:grid-cols-2 gap-5"><div><label class="block text-sm font-semibold text-gray-700 mb-2">Nomor Surat</label><input type="text" id="edit-nomor" class="w-full form-input rounded-lg px-4 py-3 bg-gray-50" readonly></div><div><label class="block text-sm font-semibold text-gray-700 mb-2">Tanggal Surat</label><input type="date" id="edit-tanggal" class="w-full form-input rounded-lg px-4 py-3" required></div></div><div><label class="block text-sm font-semibold text-gray-700 mb-2">Nama Pemohon</label><input type="text" id="edit-pemohon" class="w-full form-input rounded-lg px-4 py-3" required></div><div><label class="block text-sm font-semibold text-gray-700 mb-2">Jenis Surat</label><select id="edit-jenis" class="w-full form-input rounded-lg px-4 py-3" required><option value="Surat Izin">Surat Izin</option><option value="Surat Keterangan">Surat Keterangan</option><option value="Surat Pengantar">Surat Pengantar</option><option value="Surat Undangan">Surat Undangan</option></select></div><div><label class="block text-sm font-semibold text-gray-700 mb-2">Isi Surat</label><textarea id="edit-isi" rows="8" class="w-full form-input rounded-lg px-4 py-3" required></textarea></div><div class="flex gap-3 pt-4"><button type="submit" class="flex-1 gradient-success text-white font-bold py-3 rounded-lg">Simpan Perubahan</button><button type="button" onclick="closeEditModal()" class="flex-1 border-2 border-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-50">Batal</button></div></form></div></div>
+    <!-- MODALS -->
+    <div id="edit-modal" class="modal-overlay"><div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 p-6 max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-bold">Edit Surat</h2><button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700"><i data-lucide="x" class="w-6 h-6"></i></button></div><form id="edit-surat-form"><input type="hidden" id="edit-id"><div class="grid grid-cols-2 gap-4 mb-4"><div><label>Nomor Surat</label><input type="text" id="edit-nomor" class="w-full form-input rounded-lg px-3 py-2 bg-gray-100" readonly></div><div><label>Tanggal Surat</label><input type="date" id="edit-tanggal" class="w-full form-input rounded-lg px-3 py-2" required></div></div><div class="mb-4"><label>Nama Pemohon</label><input type="text" id="edit-pemohon" class="w-full form-input rounded-lg px-3 py-2" required></div><div class="mb-4"><label>Jenis Surat</label><select id="edit-jenis" class="w-full form-input rounded-lg px-3 py-2"><option>Surat Keterangan Usaha</option><option>Surat Permohonan Pinjam Lahan</option><option>Surat Keterangan Domisili</option><option>Surat Keterangan Dispensasi</option></select></div><div class="mb-4"><label>Isi Surat</label><textarea id="edit-isi" rows="8" class="w-full form-input rounded-lg px-3 py-2"></textarea></div><div class="flex gap-3"><button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg">Simpan</button><button type="button" onclick="closeEditModal()" class="bg-gray-300 px-4 py-2 rounded-lg">Batal</button></div></form></div></div>
 
-  <div id="detail-modal" class="modal-overlay"><div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 p-6 md:p-8 max-h-[90vh] overflow-y-auto"><div class="flex items-center justify-between mb-6"><h2 class="text-2xl font-bold text-gray-800">Detail Surat</h2><button onclick="closeDetailModal()" class="p-2 hover:bg-gray-100 rounded-lg"><i data-lucide="x" class="w-6 h-6 text-gray-600"></i></button></div><div id="detail-content" class="space-y-4"></div><div class="mt-8 flex gap-3"><button onclick="closeDetailModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Tutup</button><button id="print-detail-btn" class="flex-1 px-4 py-2 btn-primary text-white rounded-lg hover:shadow-lg"><i data-lucide="printer" class="w-4 h-4 inline mr-2"></i> Cetak Surat</button></div></div></div>
+    <div id="validasi-modal" class="modal-overlay"><div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 p-6"><div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-bold">Validasi Surat</h2><button onclick="closeValidasiModal()" class="text-gray-500 hover:text-gray-700"><i data-lucide="x" class="w-6 h-6"></i></button></div><div id="validasi-content" class="mb-4"></div><textarea id="catatan-validasi" placeholder="Catatan validasi" rows="3" class="w-full form-input rounded-lg px-3 py-2 mb-4"></textarea><div class="flex gap-3"><button id="approve-btn" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition">✅ Setujui</button><button id="reject-btn" class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition">❌ Tolak</button></div></div></div>
 
-  <div id="validasi-modal" class="modal-overlay"><div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 p-6 md:p-8"><div class="flex items-center justify-between mb-6"><h2 class="text-2xl font-bold text-gray-800">Proses Validasi</h2><button onclick="closeValidasiModal()" class="p-2 hover:bg-gray-100 rounded-lg"><i data-lucide="x" class="w-6 h-6 text-gray-600"></i></button></div><div id="validasi-content" class="space-y-4 mb-6"></div><div class="mb-4"><label class="block text-sm font-semibold text-gray-700 mb-2">Catatan Validasi</label><textarea id="catatan-validasi" placeholder="Tuliskan catatan validasi..." rows="4" class="w-full form-input rounded-lg px-4 py-3"></textarea></div><div class="flex gap-3"><button id="reject-btn" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"><i data-lucide="x" class="w-4 h-4 inline mr-2"></i> Tolak</button><button id="approve-btn" class="flex-1 px-4 py-2 gradient-success text-white rounded-lg hover:shadow-lg"><i data-lucide="check" class="w-4 h-4 inline mr-2"></i> Setujui</button></div></div></div>
+    <div id="detail-modal" class="modal-overlay"><div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 p-6"><div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-bold">Detail Surat</h2><button onclick="closeDetailModal()" class="text-gray-500 hover:text-gray-700"><i data-lucide="x" class="w-6 h-6"></i></button></div><div id="detail-content"></div><div class="mt-4 flex gap-3"><button onclick="closeDetailModal()" class="flex-1 bg-gray-300 py-2 rounded-lg">Tutup</button><button id="print-detail-btn" class="flex-1 btn-primary text-white py-2 rounded-lg">📄 Cetak PDF</button></div></div></div>
 
-  <script>
-    (function() {
-      let suratData = [];
-      let currentUser = "";
-      let currentValidationSurat = null;
-      
-      const kodeSuratMap = { 
-        'Surat Izin': 'SI', 'Surat Keterangan': 'SK', 
-        'Surat Pengantar': 'SP', 'Surat Undangan': 'SU'
-      };
-      
-      const templateSuratMap = {
-        'Surat Izin': 'Dengan hormat,\n\nSaya yang bertanda tangan di bawah ini memohon izin untuk tidak mengikuti kegiatan desa karena sakit.\n\nDemikian surat izin ini saya buat dengan sebenarnya.',
-        'Surat Keterangan': 'Yang bertanda tangan di bawah ini menerangkan bahwa:\n\nNama: [Nama Warga]\nNIK: [NIK]\n\nBahwa warga tersebut benar-benar terdaftar sebagai penduduk Desa Pongpongan.\n\nDemikian surat keterangan ini dibuat untuk dipergunakan sebagaimana mestinya.',
-        'Surat Pengantar': 'Bersama ini kami sampaikan surat pengantar untuk keperluan administrasi.\n\nDemikian surat pengantar ini dibuat, atas perhatiannya diucapkan terima kasih.',
-        'Surat Undangan': 'Assalamu\'alaikum Wr. Wb.\n\nDengan hormat kami mengundang Bapak/Ibu untuk menghadiri acara desa.\n\nWassalamu\'alaikum Wr. Wb.'
-      };
-      
-      // LOAD DATA FROM API
-      async function loadData() {
-        try {
-          const response = await fetch('/api/surat/all');
-          const result = await response.json();
-          if (result.success && result.data) {
-            suratData = result.data;
-          } else {
-            suratData = [];
-          }
-        } catch (error) {
-          console.error('Error loading data:', error);
-          suratData = [];
-        }
-        updateDashboardStats();
-        updateRecentLetters();
-        updateValidationList();
-        updateArsipTable();
-        updateManajemenTable();
-      }
-      
-      function updateDashboardStats() {
-        const total = suratData.length;
-        const pending = suratData.filter(s => s.status_validasi === 'Pending').length;
-        const valid = suratData.filter(s => s.status_validasi === 'Valid').length;
-        const rejected = suratData.filter(s => s.status_validasi === 'Rejected').length;
-        document.getElementById('stat-total').textContent = total;
-        document.getElementById('stat-pending').textContent = pending;
-        document.getElementById('stat-valid').textContent = valid;
-        document.getElementById('stat-rejected').textContent = rejected;
-      }
-      
-      function updateRecentLetters() {
-        const recent = suratData.slice().reverse().slice(0,3);
-        const container = document.getElementById('recent-letters');
-        if (!container) return;
-        if (recent.length === 0) {
-          container.innerHTML = '<div class="text-center py-8 text-gray-500">Belum ada surat</div>';
-          return;
-        }
-        container.innerHTML = recent.map(s => `
-          <div class="letter-card p-4">
-            <div class="flex items-start justify-between mb-3">
-              <div>
-                <p class="font-semibold text-gray-800">${s.jenis_surat}</p>
-                <p class="text-sm text-gray-600">No: ${s.nomor_surat}</p>
-              </div>
-              <span class="status-badge status-${(s.status_validasi || 'pending').toLowerCase()}">${s.status_validasi || 'Pending'}</span>
-            </div>
-            <p class="text-sm text-gray-600">Pemohon: ${s.nama_pemohon}</p>
-            <p class="text-xs text-gray-500">Tanggal: ${new Date(s.tanggal_surat).toLocaleDateString('id-ID')}</p>
-          </div>
-        `).join('');
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-      }
-      
-      function updateValidationList() {
-        const pending = suratData.filter(s => s.status_validasi === 'Pending');
-        const container = document.getElementById('validation-list');
-        if (!container) return;
-        if (pending.length === 0) {
-          container.innerHTML = '<div class="text-center py-12 text-gray-500">Semua surat sudah divalidasi</div>';
-          return;
-        }
-        container.innerHTML = pending.map(s => `
-          <div class="letter-card p-4 border-l-4 border-amber-500">
-            <p class="font-bold">${s.jenis_surat}</p>
-            <p class="text-sm">No: ${s.nomor_surat}</p>
-            <p><strong>Pemohon:</strong> ${s.nama_pemohon}</p>
-            <p><strong>Tanggal:</strong> ${new Date(s.tanggal_surat).toLocaleDateString('id-ID')}</p>
-            <button onclick="openValidasiModal('${s.id}')" class="mt-3 px-4 py-2 gradient-success text-white rounded-lg text-sm">Validasi Surat</button>
-          </div>
-        `).join('');
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-      }
-      
-      function updateArsipTable(searchTerm = '') {
-        let filtered = suratData;
-        if (searchTerm) {
-          filtered = filtered.filter(s => 
-            (s.nomor_surat || '').toLowerCase().includes(searchTerm) || 
-            (s.nama_pemohon || '').toLowerCase().includes(searchTerm) || 
-            (s.jenis_surat || '').toLowerCase().includes(searchTerm)
-          );
-        }
-        const tbody = document.getElementById('arsip-table-body');
-        if (!tbody) return;
-        if (filtered.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">Tidak ada data</td></tr>';
-          return;
-        }
-        tbody.innerHTML = filtered.map(s => `
-          <tr class="border-b hover:bg-gray-50">
-            <td class="px-4 py-3">${s.nomor_surat || '-'}</td>
-            <td class="px-4 py-3">${s.nama_pemohon || '-'}</td>
-            <td class="px-4 py-3">${s.jenis_surat || '-'}</td>
-            <td class="px-4 py-3">${new Date(s.tanggal_surat).toLocaleDateString('id-ID')}</td>
-            <td class="px-4 py-3"><span class="status-badge status-${(s.status_validasi || 'pending').toLowerCase()}">${s.status_validasi || 'Pending'}</span></td>
-            <td class="px-4 py-3"><button onclick="openDetailModal('${s.id}')" class="text-sky-600 hover:underline">Lihat</button></td>
-          </tr>
-        `).join('');
-      }
-      
-      function updateManajemenTable(searchTerm = '') {
-        let filtered = suratData;
-        if (searchTerm) {
-          filtered = filtered.filter(s => 
-            (s.nomor_surat || '').toLowerCase().includes(searchTerm) || 
-            (s.nama_pemohon || '').toLowerCase().includes(searchTerm) || 
-            (s.jenis_surat || '').toLowerCase().includes(searchTerm)
-          );
-        }
-        const tbody = document.getElementById('manajemen-table-body');
-        if (!tbody) return;
-        if (filtered.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Belum ada data</td></tr>';
-          return;
-        }
-        tbody.innerHTML = filtered.map(s => `
-          <tr class="border-b hover:bg-gray-50">
-            <td class="px-4 py-3">${s.nomor_surat || '-'}</td>
-            <td class="px-4 py-3">${s.nama_pemohon || '-'}</td>
-            <td class="px-4 py-3">${s.jenis_surat || '-'}</td>
-            <td class="px-4 py-3"><span class="status-badge status-${(s.status_validasi || 'pending').toLowerCase()}">${s.status_validasi || 'Pending'}</span></td>
-            <td class="px-4 py-3">
-              <div class="action-buttons">
-                <button onclick="openEditModal('${s.id}')" class="btn-action btn-edit">Edit</button>
-                <button onclick="exportToPDF('${s.id}')" class="btn-action btn-pdf">PDF</button>
-                <button onclick="deleteSurat('${s.id}')" class="btn-action btn-delete">Hapus</button>
-              </div>
-            </td>
-          </tr>
-        `).join('');
-      }
-      
-      // ============ API FUNCTIONS ============
-      async function validasiSuratAPI(id, status, catatan) {
-        try {
-          const response = await fetch(`/api/surat/update/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              status_validasi: status,
-              validator_name: currentUser,
-              tanggal_validasi: new Date().toISOString(),
-              catatan_validasi: catatan
-            })
-          });
-          const result = await response.json();
-          if (result.success) {
-            await loadData();
-            return true;
-          }
-          return false;
-        } catch (error) {
-          console.error('Error:', error);
-          return false;
-        }
-      }
-      
-      async function deleteSuratAPI(id) {
-        try {
-          const response = await fetch(`/api/surat/delete/${id}`, { method: 'DELETE' });
-          const result = await response.json();
-          if (result.success) {
-            await loadData();
-            return true;
-          }
-          return false;
-        } catch (error) {
-          console.error('Error:', error);
-          return false;
-        }
-      }
-      
-      async function updateSuratAPI(id, data) {
-        try {
-          const response = await fetch(`/api/surat/update/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-          });
-          const result = await response.json();
-          if (result.success) {
-            await loadData();
-            return true;
-          }
-          return false;
-        } catch (error) {
-          console.error('Error:', error);
-          return false;
-        }
-      }
-      
-      // ============ QR CODE & PDF ============
-      async function generateQRCode(text, size = 150) {
-        return new Promise((resolve, reject) => {
-          const canvas = document.createElement('canvas');
-          canvas.width = size;
-          canvas.height = size;
-          QRCode.toCanvas(canvas, text, {
-            width: size,
-            margin: 2,
-            color: { dark: '#000000', light: '#FFFFFF' }
-          }, function(error) {
-            if (error) reject(error);
-            else resolve(canvas.toDataURL('image/png'));
-          });
-        });
-      }
-      
-      window.exportToPDF = async (suratId) => {
-        const surat = suratData.find(s => s.id === suratId);
-        if (!surat) {
-          alert('Data surat tidak ditemukan!');
-          return;
-        }
-        
-        const tanggalSurat = new Date(surat.tanggal_surat).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-        let isiHTML = (surat.isi_surat || '').replace(/\n/g, '<br>');
-        const validationUrl = `${window.location.origin}/verify?id=${surat.id}`;
-        
-        let qrDataUrl = '';
-        try {
-          qrDataUrl = await generateQRCode(validationUrl, 100);
-        } catch(e) { console.error('QR Code generation failed:', e); }
-        
-        const pdfDiv = document.createElement('div');
-        pdfDiv.className = 'print-paper';
-        pdfDiv.style.cssText = 'position:fixed;left:-9999px;top:0;background:white;width:800px;padding:40px;font-family:"Times New Roman",Times,serif';
-        
-        const logoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="70" height="70"><rect x="20" y="40" width="60" height="50" fill="#1B5E20" rx="5"/><polygon points="50,15 20,40 80,40" fill="#F9A825"/><rect x="40" y="65" width="20" height="25" fill="#F9A825"/><circle cx="50" cy="55" r="8" fill="white"/><text x="50" y="85" text-anchor="middle" font-size="8" fill="white" font-weight="bold">DES</text></svg>`;
-        
-        const qrHtml = qrDataUrl ? `<div class="qrcode-corner"><img src="${qrDataUrl}" alt="QR Code"><p>Scan untuk verifikasi</p></div>` : '';
-        
-        pdfDiv.innerHTML = `
-          <div class="header">
-            <div class="logo-container"><div class="logo-svg">${logoSvg}</div><div><div class="school-name">PEMERINTAH DESA PONGPONGAN</div><div class="school-subname">KECAMATAN MERAKURAK</div><div class="school-subname">KABUPATEN TUBAN</div></div><div style="width:70px;"></div></div>
-            <div class="school-address">Jl. Raya Desa Pongpongan No. 01, Kec. Merakurak, Kab. Tuban - Jawa Timur</div>
-            <div class="school-address">Telp. (0356) 123456, Email: desapongpongan@email.com</div>
-          </div>
-          <div class="letter-info"><table><tr><td style="width:120px;">Nomor</td><td>:</td><td>${surat.nomor_surat || '-'}</td></tr><tr><td>Perihal</td><td>:</td><td>${surat.jenis_surat || '-'}</td></tr><tr><td>Lampiran</td><td>:</td><td>-</td></tr></table></div>
-          <div><p>Kepada Yth.<br><strong>${surat.nama_pemohon || '-'}</strong><br>Di Tempat</p></div>
-          <p>Assalamu'alaikum Wr. Wb.</p>
-          <div class="letter-body"><p>Dengan hormat,</p><div>${isiHTML}</div></div>
-          <p>Wassalamu'alaikum Wr. Wb.</p>
-          <div class="signature-area"><p>Mengetahui,</p><p>Kepala Desa Pongpongan</p><div class="signature-name">SUPRIYANTO, S.Sos</div><div class="signature-nip">NIP. 196512311990011001</div></div>
-          <div style="text-align:right; margin-top:20px;">Pongpongan, ${tanggalSurat}</div>
-          ${qrHtml}
-        `;
-        
-        document.body.appendChild(pdfDiv);
-        try {
-          const canvas = await html2canvas(pdfDiv, { scale: 2, backgroundColor: '#ffffff', logging: false });
-          const imgData = canvas.toDataURL('image/png');
-          const { jsPDF } = window.jspdf;
-          const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-          const imgWidth = 210;
-          const imgHeight = (canvas.height * imgWidth) / canvas.width;
-          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-          pdf.save(`Surat_${surat.jenis_surat}_${surat.nomor_surat}.pdf`);
-          alert('PDF berhasil diunduh!');
-        } catch(e) { console.error(e); alert('Gagal membuat PDF: ' + e.message); }
-        document.body.removeChild(pdfDiv);
-      };
-      
-      // ============ MODAL FUNCTIONS ============
-      window.openEditModal = (id) => {
-        const s = suratData.find(x => x.id === id);
-        if (s) {
-          document.getElementById('edit-id').value = s.id;
-          document.getElementById('edit-nomor').value = s.nomor_surat || '';
-          document.getElementById('edit-tanggal').value = s.tanggal_surat || '';
-          document.getElementById('edit-pemohon').value = s.nama_pemohon || '';
-          document.getElementById('edit-jenis').value = s.jenis_surat || '';
-          document.getElementById('edit-isi').value = s.isi_surat || '';
-          document.getElementById('edit-modal').classList.add('active');
-        }
-      };
-      
-      window.closeEditModal = () => document.getElementById('edit-modal').classList.remove('active');
-      
-      document.getElementById('edit-surat-form')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('edit-id').value;
-        const success = await updateSuratAPI(id, {
-          nama_pemohon: document.getElementById('edit-pemohon').value,
-          jenis_surat: document.getElementById('edit-jenis').value,
-          tanggal_surat: document.getElementById('edit-tanggal').value,
-          isi_surat: document.getElementById('edit-isi').value
-        });
-        if (success) {
-          alert('Berhasil diupdate');
-          closeEditModal();
-        } else {
-          alert('Gagal mengupdate');
-        }
-      });
-      
-      window.openDetailModal = (id) => {
-        const s = suratData.find(x => x.id === id);
-        if (!s) return;
-        const container = document.getElementById('detail-content');
-        if (container) {
-          container.innerHTML = `
-            <div class="space-y-3">
-              <div class="border-b pb-2"><strong>Nomor Surat:</strong> ${s.nomor_surat || '-'}</div>
-              <div class="border-b pb-2"><strong>Pemohon:</strong> ${s.nama_pemohon || '-'}</div>
-              <div class="border-b pb-2"><strong>Jenis Surat:</strong> ${s.jenis_surat || '-'}</div>
-              <div class="border-b pb-2"><strong>Tanggal:</strong> ${new Date(s.tanggal_surat).toLocaleDateString('id-ID')}</div>
-              <div class="border-b pb-2"><strong>Status Validasi:</strong> <span class="status-badge status-${(s.status_validasi || 'pending').toLowerCase()}">${s.status_validasi || 'Pending'}</span></div>
-              <div class="pt-2"><strong>Isi Surat:</strong></div>
-              <div class="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">${s.isi_surat || '-'}</div>
-            </div>
-          `;
-        }
-        document.getElementById('detail-modal').classList.add('active');
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-        const printBtn = document.getElementById('print-detail-btn');
-        if (printBtn) printBtn.onclick = () => window.exportToPDF(id);
-      };
-      
-      window.closeDetailModal = () => document.getElementById('detail-modal').classList.remove('active');
-      
-      window.openValidasiModal = (id) => {
-        const s = suratData.find(x => x.id === id);
-        if (s) {
-          currentValidationSurat = s;
-          document.getElementById('validasi-content').innerHTML = `
-            <div class="space-y-3">
-              <div class="border-b pb-2"><strong>Nomor:</strong> ${s.nomor_surat || '-'}</div>
-              <div class="border-b pb-2"><strong>Pemohon:</strong> ${s.nama_pemohon || '-'}</div>
-              <div class="border-b pb-2"><strong>Jenis:</strong> ${s.jenis_surat || '-'}</div>
-              <div class="pt-2"><strong>Isi Surat:</strong></div>
-              <div class="whitespace-pre-wrap bg-gray-50 p-3 rounded-lg text-sm">${s.isi_surat || '-'}</div>
-            </div>
-          `;
-          document.getElementById('catatan-validasi').value = '';
-          document.getElementById('validasi-modal').classList.add('active');
-        }
-      };
-      
-      window.closeValidasiModal = () => document.getElementById('validasi-modal').classList.remove('active');
-      
-      document.getElementById('approve-btn')?.addEventListener('click', async () => {
-        if (currentValidationSurat) {
-          const catatan = document.getElementById('catatan-validasi')?.value || '';
-          const success = await validasiSuratAPI(currentValidationSurat.id, 'Valid', catatan);
-          if (success) {
-            alert('Surat divalidasi');
-            closeValidasiModal();
-          } else {
-            alert('Gagal memvalidasi surat');
-          }
-        }
-      });
-      
-      document.getElementById('reject-btn')?.addEventListener('click', async () => {
-        if (currentValidationSurat) {
-          const catatan = document.getElementById('catatan-validasi')?.value || '';
-          const success = await validasiSuratAPI(currentValidationSurat.id, 'Rejected', catatan);
-          if (success) {
-            alert('Surat ditolak');
-            closeValidasiModal();
-          } else {
-            alert('Gagal menolak surat');
-          }
-        }
-      });
-      
-      window.deleteSurat = async (id) => {
-        if (confirm('Apakah Anda yakin ingin menghapus surat ini?')) {
-          const success = await deleteSuratAPI(id);
-          if (success) {
-            alert('Surat berhasil dihapus');
-          } else {
-            alert('Gagal menghapus surat');
-          }
-        }
-      };
-      
-      // ============ EVENT LISTENERS ============
-      function setCurrentDate() {
-        const today = new Date();
-        const d = document.getElementById('current-date');
-        if (d) d.textContent = today.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-        const t = document.getElementById('tanggal-surat');
-        if (t) t.valueAsDate = new Date();
-      }
-      setCurrentDate();
-      
-      // Jenis surat change handler
-      document.getElementById('jenis-surat')?.addEventListener('change', function() {
-        const selectedJenis = this.value;
-        if (selectedJenis && kodeSuratMap[selectedJenis]) {
-          const bulan = String(new Date().getMonth() + 1).padStart(2, '0');
-          const tahun = new Date().getFullYear();
-          const count = suratData.filter(s => s.jenis_surat === selectedJenis).length;
-          const nomorUrut = count + 1;
-          document.getElementById('nomor-surat').value = `${kodeSuratMap[selectedJenis]}/${String(nomorUrut).padStart(3, '0')}/${bulan}/${tahun}`;
-          document.getElementById('isi-surat').value = templateSuratMap[selectedJenis] || '';
-        } else {
-          document.getElementById('nomor-surat').value = '';
-          document.getElementById('isi-surat').value = '';
-        }
-      });
-      
-      // Search inputs
-      document.getElementById('search-arsip')?.addEventListener('input', (e) => updateArsipTable(e.target.value.toLowerCase()));
-      document.getElementById('search-manajemen')?.addEventListener('input', (e) => updateManajemenTable(e.target.value.toLowerCase()));
-      
-      // Login form
-      document.getElementById('login-form')?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        currentUser = document.getElementById('username')?.value.trim() || "Admin Desa";
-        document.getElementById('user-display').textContent = currentUser;
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('main-app').classList.remove('hidden');
-        loadData();
-        setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 100);
-      });
-      
-      // Buat surat form
-      document.getElementById('buat-surat-form')?.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const nomorSurat = document.getElementById('nomor-surat')?.value;
-        if (!nomorSurat) {
-          alert('Pilih jenis surat terlebih dahulu');
-          return;
-        }
-        const newSurat = {
-          nama_pemohon: document.getElementById('nama-pemohon')?.value,
-          jenis_surat: document.getElementById('jenis-surat')?.value,
-          tanggal_surat: document.getElementById('tanggal-surat')?.value,
-          isi_surat: document.getElementById('isi-surat')?.value
-        };
-        try {
-          const response = await fetch('/api/surat/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newSurat)
-          });
-          const result = await response.json();
-          if (result.success) {
-            alert('Surat berhasil disimpan!');
-            document.getElementById('buat-surat-form').reset();
-            const tglSurat = document.getElementById('tanggal-surat');
-            if (tglSurat) tglSurat.valueAsDate = new Date();
-            document.getElementById('nomor-surat').value = '';
-            document.getElementById('isi-surat').value = '';
+    <script>
+        (function() {
+            let suratData = [];
+            let currentUser = "";
+            let currentValidationSurat = null;
+            const API_BASE = '/api/surat';
+
+            // Pagination manajemen
+            let currentManajemenPage = 1;
+            let currentManajemenSearch = '';
+            const itemsPerPage = 10;
+
+            const templateSuratMap = {
+                'Surat Keterangan Usaha': `Yang bertanda tangan dibawah ini :\n\nNama : LUQMANUL HAKIM\nJabatan : Kepala Desa Pongpongan\nAlamat : Desa Pongpongan Kecamatan Merakurak Kab.Tuban\n\nMenerangkan dengan sebenarnya bahwa:\n\nNama Pemilik Usaha : [Nama Pemohon]\nNIK : [NIK]\nTempat & Tgl Lahir : [Tempat, Tanggal Lahir]\nAlamat : [Alamat Lengkap]\nJenis usaha : [Jenis Usaha]\nKeperluan : Untuk Pengajuan Persyaratan Administrasi\n\nKeterangan : Bahwa orang tersebut benar-benar Penduduk Desa Pongpongan dan mempunyai usaha tersebut.`,
+                'Surat Permohonan Pinjam Lahan': `Kepada Yth,\nBina Lingkungan PT. Semen Indonesia Group\n\nDengan hormat.\n\nSehubungan dengan kebutuhan tempat Pembuangan sampah sementara maka bersama ini kami Pemerintah Desa Pongpongan bermaksud mengajukan permohonan pinjam Lahan Tempat sampah Sementara (TPSS) yang berlokasi di atas tanah milik semen yang tidak terpakai.\n\nDemikian permohonan ini, atas perhatiannya diucapkan terima kasih.`,
+                'Surat Keterangan Domisili': `Yang bertanda tangan dibawah ini :\n\nNama : LUQMANUL HAKIM\nJabatan : Kepala Desa Pongpongan\n\nMenerangkan dengan sebenarnya bahwa :\n\nNama : [Nama Pemohon]\nAlamat : [Alamat Lengkap]\n\nBahwa orang tersebut benar-benar berdomisili di Desa Pongpongan.\n\nDemikian surat ini dibuat untuk persyaratan administrasi.`,
+                'Surat Keterangan Dispensasi': `Yang bertanda tangan dibawah ini :\n\nNama : LUQMANUL HAKIM\nJabatan : Kepala Desa Pongpongan\n\nMenerangkan bahwa:\n\nNama : [Nama Pemohon]\nAlamat : [Alamat Lengkap]\n\nTidak bisa masuk kerja dikarenakan ADA KELUARGA YANG MENINGGAL.\n\nDemikian surat keterangan ini dibuat dengan sebenarnya.`
+            };
+
+            // Fungsi pembuat uniqueId yang TIDAK PERNAH null
+            function generateUniqueId() {
+                try {
+                    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                        return window.crypto.randomUUID();
+                    }
+                } catch(e) {}
+                // Fallback: timestamp + random string
+                return Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 11);
+            }
+
+            function showToast(message, type = 'success') {
+                const toast = document.createElement('div');
+                toast.className = `toast-notification ${type === 'error' ? 'error' : ''}`;
+                toast.innerHTML = message;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            }
+
+            async function loadData() {
+                try {
+                    const response = await fetch(`${API_BASE}/all`);
+                    const result = await response.json();
+                    if (result.success) {
+                        suratData = result.data;
+                        console.log('✅ Loaded:', suratData.length, 'surat');
+                    } else {
+                        suratData = [];
+                    }
+                } catch (error) {
+                    console.error('Gagal ambil data:', error);
+                    suratData = [];
+                    showToast('Gagal koneksi ke server backend', 'error');
+                }
+                updateDashboardStats();
+                updateRecentLetters();
+                updateValidationList();
+                updateArsipTable();
+                updateManajemenTable(currentManajemenSearch);
+            }
+
+            document.getElementById('buat-surat-form')?.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const nomorSurat = document.getElementById('nomor-surat').value;
+                if (!nomorSurat) { alert('Pilih jenis surat dulu!'); return; }
+
+                // ** PERBAIKAN UTAMA: uniqueId selalu dikirim **
+                const uniqueId = generateUniqueId();
+                console.log('🔑 uniqueId yang akan dikirim:', uniqueId);
+
+                const data = {
+                    uniqueId: uniqueId,
+                    nomor_surat: nomorSurat,
+                    jenis_surat: document.getElementById('jenis-surat').value,
+                    nama_pemohon: document.getElementById('nama-pemohon').value,
+                    tanggal_surat: document.getElementById('tanggal-surat').value,
+                    isi_surat: document.getElementById('isi-surat').value,
+                    status_validasi: 'Pending'
+                };
+
+                console.log('📦 Data yang dikirim:', JSON.stringify(data, null, 2));
+
+                try {
+                    const response = await fetch(`${API_BASE}/create`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await response.json();
+                    console.log('📬 Respons server:', result);
+                    if (result.success) {
+                        showToast('✅ Surat berhasil disimpan!');
+                        document.getElementById('buat-surat-form').reset();
+                        document.getElementById('tanggal-surat').valueAsDate = new Date();
+                        document.getElementById('nomor-surat').value = '';
+                        document.getElementById('isi-surat').value = '';
+                        loadData();
+                        showView('dashboard');
+                    } else {
+                        alert('Gagal: ' + (result.message || 'Terjadi kesalahan'));
+                    }
+                } catch (error) {
+                    console.error('❌ Error:', error);
+                    alert('Server tidak bisa dihubungi.');
+                }
+            });
+
+            window.deleteSurat = async (id) => {
+                if (!confirm('Yakin hapus surat ini?')) return;
+                try {
+                    const res = await fetch(`${API_BASE}/delete/${id}`, { method: 'DELETE' });
+                    const result = await res.json();
+                    if (result.success) { showToast('🗑️ Surat dihapus'); loadData(); }
+                    else { alert('Gagal hapus: ' + result.message); }
+                } catch (err) { console.error(err); }
+            };
+
+            document.getElementById('edit-surat-form')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('edit-id').value;
+                const data = {
+                    nama_pemohon: document.getElementById('edit-pemohon').value,
+                    jenis_surat: document.getElementById('edit-jenis').value,
+                    tanggal_surat: document.getElementById('edit-tanggal').value,
+                    isi_surat: document.getElementById('edit-isi').value,
+                    status_validasi: 'Pending'
+                };
+                try {
+                    const res = await fetch(`${API_BASE}/update/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await res.json();
+                    if (result.success) { showToast('✏️ Surat diupdate'); closeEditModal(); loadData(); }
+                    else { alert('Gagal update: ' + result.message); }
+                } catch (err) { console.error(err); }
+            });
+
+            window.validasiSurat = async (id, status, catatan) => {
+                console.log('🔍 Validasi surat ID:', id, 'Status:', status);
+                if (!id) { showToast('ID Surat tidak valid!', 'error'); return false; }
+                try {
+                    const response = await fetch(`${API_BASE}/update/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            status_validasi: status,
+                            catatan_validasi: catatan || '',
+                            tanggal_validasi: new Date().toISOString(),
+                            validator_name: currentUser || 'Admin Desa'
+                        })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        showToast(status === 'Valid' ? '✅ Surat DIVALIDASI!' : '❌ Surat DITOLAK!');
+                        await loadData();
+                        return true;
+                    } else {
+                        showToast('Gagal validasi: ' + (result.message || 'Unknown error'), 'error');
+                        return false;
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showToast('Error koneksi ke server', 'error');
+                    return false;
+                }
+            };
+
+            async function generateQRCode(text, size = 120) {
+                return new Promise((resolve, reject) => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    QRCode.toCanvas(canvas, text, { width: size, margin: 2 }, function(error) {
+                        if (error) reject(error);
+                        else resolve(canvas.toDataURL('image/png'));
+                    });
+                });
+            }
+
+            window.exportToPDF = async (suratId) => {
+                const surat = suratData.find(s => s._id === suratId);
+                if (!surat) { alert('Data surat tidak ditemukan!'); return; }
+                if (surat.status_validasi !== 'Valid') { alert('Surat belum valid! Tidak bisa di download.'); return; }
+
+                const tanggalSurat = new Date(surat.tanggal_surat).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                const validationUrl = `${window.location.origin}/verify?id=${surat._id}`;
+                let qrDataUrl = '';
+                try { qrDataUrl = await generateQRCode(validationUrl, 100); } catch(e) { console.error(e); }
+
+                const pdfDiv = document.createElement('div');
+                pdfDiv.className = 'print-paper';
+                pdfDiv.style.cssText = 'position:fixed;left:-9999px;top:0;background:white;width:800px;padding:40px;font-family:"Times New Roman", Times, serif;box-sizing:border-box;';
+                
+                pdfDiv.innerHTML = `
+                    <div class="kop-surat">
+                        <h2>PEMERINTAH KABUPATEN TUBAN</h2>
+                        <h3>KECAMATAN MERAKURAK</h3>
+                        <div class="desa">DESA PONGPONGAN</div>
+                        <div class="alamat">Jl. Pongpongan No.001, Kabupaten Tuban Jawa Timur Kode Pos 62355</div>
+                        <div class="garis-kop"></div>
+                    </div>
+
+                    <div class="judul-surat">
+                        <h3>SURAT KETERANGAN USAHA</h3>
+                        <p>Nomor : ${surat.nomor_surat}</p>
+                    </div>
+
+                    <div style="margin-top:20px;">
+                        <p>Yang bertanda tangan dibawah ini :</p>
+                        <table style="margin-left:20px; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 5px; width: 180px;">Nama</td>
+                                <td style="padding: 5px;">: LUQMANUL HAKIM</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px;">Jabatan</td>
+                                <td style="padding: 5px;">: Kepala Desa Pongpongan</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px;">Alamat</td>
+                                <td style="padding: 5px;">: Desa Pongpongan Kecamatan Merakurak Kab. Tuban</td>
+                            </tr>
+                        </table>
+
+                        <p style="margin-top:20px;">Menerangkan dengan sebenarnya bahwa :</p>
+                        
+                        <table style="margin-left:20px; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 5px; width: 180px;">Nama Pemilik Usaha</td>
+                                <td style="padding: 5px;">: ${surat.nama_pemohon}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px;">NIK</td>
+                                <td style="padding: 5px;">: 3523130411600001</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px;">Tempat & Tgl Lahir</td>
+                                <td style="padding: 5px;">: Tuban, 04-11-1960</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px;">Alamat</td>
+                                <td style="padding: 5px;">: Dusun Koro RT 0042 RW 003</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px;">Tempat Kegiatan Usaha</td>
+                                <td style="padding: 5px;">: Desa Pongpongan Kec. Merakurak Kab. Tuban</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px;">Jenis Usaha</td>
+                                <td style="padding: 5px;">: PERTANIAN</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px;">Status Usaha</td>
+                                <td style="padding: 5px;">: Perseorangan</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px;">Mulai Kegiatan Usaha</td>
+                                <td style="padding: 5px;">: 2000</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 5px;">Keperluan</td>
+                                <td style="padding: 5px;">: Untuk Pengajuan Persyaratan Administrasi</td>
+                            </tr>
+                        </table>
+
+                        <p style="margin-top:20px;">Keterangan : Bahwa orang tersebut diatas benar-benar Penduduk 
+                        Desa Pongpongan Kec. Merakurak-Tuban dan mempunyai/memiliki usaha tersebut diatas.</p>
+                        
+                        <p style="margin-top:20px;">Demikian surat ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>
+                    </div>
+
+                    <div class="ttd">
+                        <div class="ttd-left">
+                            <p>TKSK Merakurak</p>
+                            <br><br><br>
+                            <p><u>KASDON</u></p>
+                        </div>
+                        <div class="ttd-right">
+                            <p>Pongpongan, ${tanggalSurat}</p>
+                            <p>Kepala Desa Pongpongan</p>
+                            <br><br><br>
+                            <p><u>LUQMANUL HAKIM</u></p>
+                        </div>
+                    </div>
+
+                    ${qrDataUrl ? `
+                    <div class="qrcode-container">
+                        <img src="${qrDataUrl}" width="100" height="100" style="display:block; margin:0 auto;">
+                        <p>Scan QR Code untuk verifikasi keaslian surat</p>
+                    </div>
+                    ` : ''}
+                `;
+
+                document.body.appendChild(pdfDiv);
+                try {
+                    const canvas = await html2canvas(pdfDiv, { scale: 2, backgroundColor: '#ffffff', logging: false });
+                    const imgData = canvas.toDataURL('image/png');
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                    const imgWidth = 210;
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+                    pdf.save(`Surat_${surat.jenis_surat}_${surat.nomor_surat}.pdf`);
+                    showToast('📄 PDF berhasil diunduh!');
+                } catch(e) { 
+                    console.error(e);
+                    alert('Gagal membuat PDF: ' + e.message); 
+                }
+                document.body.removeChild(pdfDiv);
+            };
+
+            function updateDashboardStats() {
+                document.getElementById('stat-total').textContent = suratData.length;
+                document.getElementById('stat-pending').textContent = suratData.filter(s => s.status_validasi === 'Pending').length;
+                document.getElementById('stat-valid').textContent = suratData.filter(s => s.status_validasi === 'Valid').length;
+                document.getElementById('stat-rejected').textContent = suratData.filter(s => s.status_validasi === 'Rejected').length;
+            }
+
+            function updateRecentLetters() {
+                const recent = [...suratData].reverse().slice(0, 3);
+                const container = document.getElementById('recent-letters');
+                if (!container) return;
+                if (recent.length === 0) { container.innerHTML = '<div class="text-center py-8 text-gray-500">Belum ada surat</div>'; return; }
+                container.innerHTML = recent.map(s => `
+                    <div class="letter-card p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <div><p class="font-semibold">${s.jenis_surat}</p><p class="text-sm text-gray-600">${s.nomor_surat}</p></div>
+                            <span class="status-badge status-${(s.status_validasi || 'pending').toLowerCase()}">${s.status_validasi || 'Pending'}</span>
+                        </div>
+                        <p class="text-sm">Pemohon: ${s.nama_pemohon}</p>
+                        <p class="text-xs text-gray-500">${new Date(s.tanggal_surat).toLocaleDateString('id-ID')}</p>
+                    </div>
+                `).join('');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+
+            function updateValidationList() {
+                const pending = suratData.filter(s => s.status_validasi === 'Pending');
+                const container = document.getElementById('validation-list');
+                if (!container) return;
+                if (pending.length === 0) { container.innerHTML = '<div class="text-center py-12 text-gray-500">✅ Semua surat sudah divalidasi</div>'; return; }
+                container.innerHTML = pending.map(s => `
+                    <div class="letter-card p-4 border-l-4 border-amber-500">
+                        <p class="font-bold">${s.jenis_surat}</p>
+                        <p>No: ${s.nomor_surat}</p>
+                        <p><strong>Pemohon:</strong> ${s.nama_pemohon}</p>
+                        <p><strong>Tanggal:</strong> ${new Date(s.tanggal_surat).toLocaleDateString('id-ID')}</p>
+                        <button onclick="openValidasiModal('${s._id}')" class="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition">✅ Validasi Surat</button>
+                    </div>
+                `).join('');
+            }
+
+            function updateArsipTable(search = '') {
+                let filtered = suratData.filter(s => s.nomor_surat?.toLowerCase().includes(search) || s.nama_pemohon?.toLowerCase().includes(search));
+                const tbody = document.getElementById('arsip-table-body');
+                if (!tbody) return;
+                if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8">📭 Tidak ada data</td></tr>'; return; }
+                tbody.innerHTML = filtered.map(s => `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3">${s.nomor_surat || '-'}</td>
+                        <td class="p-3">${s.nama_pemohon || '-'}</td>
+                        <td class="p-3">${s.jenis_surat || '-'}</td>
+                        <td class="p-3">${new Date(s.tanggal_surat).toLocaleDateString('id-ID')}</td>
+                        <td class="p-3"><span class="status-badge status-${(s.status_validasi || 'pending').toLowerCase()}">${s.status_validasi || 'Pending'}</span></td>
+                    </tr>
+                `).join('');
+            }
+
+            function updateManajemenTable(search = '') {
+                currentManajemenSearch = search;
+                let filtered = suratData.filter(s => 
+                    s.nomor_surat?.toLowerCase().includes(search) || 
+                    s.nama_pemohon?.toLowerCase().includes(search)
+                );
+                const totalItems = filtered.length;
+                const totalPages = Math.ceil(totalItems / itemsPerPage);
+                if (currentManajemenPage > totalPages) currentManajemenPage = totalPages;
+                if (currentManajemenPage < 1) currentManajemenPage = 1;
+                const startIndex = (currentManajemenPage - 1) * itemsPerPage;
+                const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+                const pageData = filtered.slice(startIndex, endIndex);
+
+                const tbody = document.getElementById('manajemen-table-body');
+                if (!tbody) return;
+
+                if (pageData.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-gray-400">
+                        <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p>Belum ada data surat</p></td></tr>`;
+                } else {
+                    tbody.innerHTML = pageData.map((s, index) => {
+                        const globalIndex = startIndex + index + 1;
+                        const isPending = s.status_validasi === 'Pending';
+                        const isValid = s.status_validasi === 'Valid';
+                        return `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="p-3">${globalIndex}</td>
+                            <td class="p-3">${s.nomor_surat || '-'}</td>
+                            <td class="p-3">${s.nama_pemohon || '-'}</td>
+                            <td class="p-3">${s.jenis_surat || '-'}</td>
+                            <td class="p-3">${new Date(s.tanggal_surat).toLocaleDateString('id-ID')}</td>
+                            <td class="p-3 text-center"><span class="status-badge status-${(s.status_validasi || 'pending').toLowerCase()}">${s.status_validasi || 'Pending'}</span></td>
+                            <td class="p-3">
+                                <div class="flex gap-2 justify-center">
+                                    ${isPending ? `<button onclick="openEditModal('${s._id}')" class="btn-action btn-edit">✏️ Edit</button><button onclick="deleteSurat('${s._id}')" class="btn-action btn-delete">🗑️ Hapus</button>` : '<span class="text-gray-400 text-xs">🔒 Tidak bisa diedit</span>'}
+                                    ${isValid ? `<button onclick="exportToPDF('${s._id}')" class="btn-action btn-pdf">📄 Download PDF</button>` : ''}
+                                </div>
+                            </td>
+                        </tr>`;
+                    }).join('');
+                }
+
+                document.getElementById('manajemen-dari').textContent = totalItems === 0 ? 0 : startIndex + 1;
+                document.getElementById('manajemen-sampai').textContent = endIndex;
+                document.getElementById('manajemen-total').textContent = totalItems;
+
+                const prevBtn = document.getElementById('prev-manajemen');
+                const nextBtn = document.getElementById('next-manajemen');
+                if (prevBtn) prevBtn.disabled = currentManajemenPage <= 1;
+                if (nextBtn) nextBtn.disabled = currentManajemenPage >= totalPages;
+            }
+
+            document.getElementById('search-manajemen')?.addEventListener('input', function(e) {
+                currentManajemenPage = 1;
+                updateManajemenTable(e.target.value.toLowerCase());
+            });
+
+            document.getElementById('prev-manajemen')?.addEventListener('click', function() {
+                if (currentManajemenPage > 1) {
+                    currentManajemenPage--;
+                    updateManajemenTable(currentManajemenSearch);
+                }
+            });
+            document.getElementById('next-manajemen')?.addEventListener('click', function() {
+                const totalPages = Math.ceil(suratData.filter(s => 
+                    s.nomor_surat?.toLowerCase().includes(currentManajemenSearch) || 
+                    s.nama_pemohon?.toLowerCase().includes(currentManajemenSearch)
+                ).length / itemsPerPage);
+                if (currentManajemenPage < totalPages) {
+                    currentManajemenPage++;
+                    updateManajemenTable(currentManajemenSearch);
+                }
+            });
+
+            window.openEditModal = (id) => {
+                const s = suratData.find(x => x._id === id);
+                if (s) {
+                    document.getElementById('edit-id').value = s._id;
+                    document.getElementById('edit-nomor').value = s.nomor_surat || '';
+                    document.getElementById('edit-tanggal').value = s.tanggal_surat ? s.tanggal_surat.split('T')[0] : '';
+                    document.getElementById('edit-pemohon').value = s.nama_pemohon || '';
+                    document.getElementById('edit-jenis').value = s.jenis_surat || '';
+                    document.getElementById('edit-isi').value = s.isi_surat || '';
+                    document.getElementById('edit-modal').classList.add('active');
+                }
+            };
+            window.closeEditModal = () => document.getElementById('edit-modal').classList.remove('active');
+            window.closeDetailModal = () => document.getElementById('detail-modal').classList.remove('active');
+            window.closeValidasiModal = () => document.getElementById('validasi-modal').classList.remove('active');
+
+            window.openValidasiModal = (id) => {
+                const s = suratData.find(x => x._id === id);
+                if (s) {
+                    currentValidationSurat = s;
+                    document.getElementById('validasi-content').innerHTML = `
+                        <div class="space-y-2">
+                            <div class="bg-gray-100 p-3 rounded-lg">
+                                <p><strong>📋 Nomor:</strong> ${s.nomor_surat}</p>
+                                <p><strong>👤 Pemohon:</strong> ${s.nama_pemohon}</p>
+                                <p><strong>📑 Jenis:</strong> ${s.jenis_surat}</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg max-h-60 overflow-auto">
+                                <p class="font-semibold mb-2">📝 Isi Surat:</p>
+                                <pre class="whitespace-pre-wrap text-sm">${s.isi_surat || '-'}</pre>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('catatan-validasi').value = '';
+                    document.getElementById('validasi-modal').classList.add('active');
+                } else { alert('Data surat tidak ditemukan!'); }
+            };
+
+            document.getElementById('approve-btn')?.addEventListener('click', async () => {
+                if (currentValidationSurat) {
+                    const success = await window.validasiSurat(currentValidationSurat._id, 'Valid', document.getElementById('catatan-validasi')?.value || '');
+                    if (success) closeValidasiModal();
+                }
+            });
+            document.getElementById('reject-btn')?.addEventListener('click', async () => {
+                if (currentValidationSurat) {
+                    const success = await window.validasiSurat(currentValidationSurat._id, 'Rejected', document.getElementById('catatan-validasi')?.value || '');
+                    if (success) closeValidasiModal();
+                }
+            });
+
+            document.getElementById('jenis-surat')?.addEventListener('change', function() {
+                const selected = this.value;
+                if (selected) {
+                    const bulan = String(new Date().getMonth() + 1).padStart(2, '0');
+                    const tahun = new Date().getFullYear();
+                    const count = suratData.filter(s => s.jenis_surat === selected).length;
+                    const prefix = { 'Surat Keterangan Usaha': '400.1.4.3', 'Surat Permohonan Pinjam Lahan': '400./030', 'Surat Keterangan Domisili': '400.1.2.1', 'Surat Keterangan Dispensasi': '400.1.2.1' }[selected] || 'SK';
+                    document.getElementById('nomor-surat').value = `${prefix}/${String(count + 1).padStart(3, '0')}/${bulan}/${tahun}`;
+                    document.getElementById('isi-surat').value = templateSuratMap[selected] || '';
+                }
+            });
+
+            document.getElementById('search-arsip')?.addEventListener('input', (e) => updateArsipTable(e.target.value.toLowerCase()));
+
+            function setCurrentDate() {
+                const today = new Date();
+                const d = document.getElementById('current-date');
+                if (d) d.textContent = today.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+                const t = document.getElementById('tanggal-surat');
+                if (t && !t.value) t.valueAsDate = new Date();
+            }
+            setCurrentDate();
+
+            function showView(viewName) {
+                const views = ['dashboard-view', 'buat-surat-view', 'validasi-view', 'arsip-view', 'manajemen-view'];
+                views.forEach(v => document.getElementById(v)?.classList.add('hidden'));
+                const viewMap = { dashboard: 'dashboard-view', 'buat-surat': 'buat-surat-view', validasi: 'validasi-view', arsip: 'arsip-view', manajemen: 'manajemen-view' };
+                document.getElementById(viewMap[viewName])?.classList.remove('hidden');
+                const titles = { dashboard: 'Dashboard', 'buat-surat': 'Pembuatan Surat', validasi: 'Validasi Surat', arsip: 'Pengarsipan Surat', manajemen: 'Manajemen Surat' };
+                document.getElementById('page-title').textContent = titles[viewName];
+            }
+
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', function() { showView(this.getAttribute('data-view')); }));
+
+            document.getElementById('login-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                currentUser = document.getElementById('username')?.value.trim() || "Admin Desa";
+                document.getElementById('user-display').textContent = currentUser;
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                loadData();
+                setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 100);
+            });
+
+            function logout() {
+                document.getElementById('main-app').classList.add('hidden');
+                document.getElementById('login-screen').classList.remove('hidden');
+            }
+            document.getElementById('logout-btn')?.addEventListener('click', logout);
+            document.getElementById('logout-btn-top')?.addEventListener('click', logout);
+
+            if (typeof lucide !== 'undefined') lucide.createIcons();
             showView('dashboard');
-            await loadData();
-          } else {
-            alert('Gagal menyimpan surat: ' + result.message);
-          }
-        } catch (error) {
-          console.error('Error:', error);
-          alert('Terjadi kesalahan');
-        }
-      });
-      
-      // Navigasi
-      function showView(viewName) {
-        const views = ['dashboard-view', 'buat-surat-view', 'validasi-view', 'arsip-view', 'manajemen-view'];
-        views.forEach(v => { const el = document.getElementById(v); if (el) el.classList.add('hidden'); });
-        document.querySelectorAll('.sidebar-nav-item').forEach(i => i.classList.remove('active'));
-        const viewMap = { 'dashboard':'dashboard-view', 'buat-surat':'buat-surat-view', 'validasi':'validasi-view', 'arsip':'arsip-view', 'manajemen':'manajemen-view' };
-        const target = document.getElementById(viewMap[viewName]);
-        if (target) target.classList.remove('hidden');
-        const titles = { 'dashboard':'Dashboard', 'buat-surat':'Pembuatan Surat', 'validasi':'Validasi Surat', 'arsip':'Pengarsipan Surat', 'manajemen':'Manajemen Surat' };
-        const pt = document.getElementById('page-title');
-        if (pt) pt.textContent = titles[viewName] || 'Dashboard';
-        document.querySelectorAll(`.nav-btn[data-view="${viewName}"]`).forEach(btn => btn.classList.add('active'));
-      }
-      
-      document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', function() {
-        const v = this.getAttribute('data-view');
-        if (v) showView(v);
-      }));
-      
-      // Logout
-      function logout() {
-        document.getElementById('main-app').classList.add('hidden');
-        document.getElementById('login-screen').classList.remove('hidden');
-        document.getElementById('login-form')?.reset();
-        currentUser = "";
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-      }
-      
-      document.getElementById('logout-btn')?.addEventListener('click', logout);
-      document.getElementById('logout-btn-top')?.addEventListener('click', logout);
-      
-      // Modal close on overlay click
-      document.getElementById('detail-modal')?.addEventListener('click', (e) => {
-        if (e.target.id === 'detail-modal') closeDetailModal();
-      });
-      document.getElementById('validasi-modal')?.addEventListener('click', (e) => {
-        if (e.target.id === 'validasi-modal') closeValidasiModal();
-      });
-      document.getElementById('edit-modal')?.addEventListener('click', (e) => {
-        if (e.target.id === 'edit-modal') closeEditModal();
-      });
-      
-      if (typeof lucide !== 'undefined') lucide.createIcons();
-      showView('dashboard');
-    })();
-  </script>
+        })();
+    </script>
 </body>
 </html>
