@@ -204,6 +204,7 @@
             document.getElementById('rejected-state').classList.add('hidden');
             document.getElementById('error-state').classList.add('hidden');
             
+            // Tampilkan data surat TANPA isi surat
             document.getElementById('valid-content').innerHTML = `
                 <div class="space-y-4">
                     <div class="border-b pb-3">
@@ -230,12 +231,7 @@
                         <p class="text-xs text-gray-500 uppercase font-semibold tracking-wide">📅 Tanggal Validasi</p>
                         <p class="text-gray-800 mt-1">${data.tanggal_validasi ? new Date(data.tanggal_validasi).toLocaleString('id-ID') : '-'}</p>
                     </div>
-                    <div class="pt-2">
-                        <p class="text-xs text-gray-500 uppercase font-semibold tracking-wide">📝 Isi Surat</p>
-                        <div class="text-gray-700 mt-2 text-sm whitespace-pre-wrap leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100">
-                            ${escapeHtml(data.isi_surat || '-').replace(/\n/g, '<br>')}
-                        </div>
-                    </div>
+                    <!-- Bagian isi surat dihapus sesuai permintaan -->
                 </div>
             `;
         }
@@ -294,13 +290,11 @@
             console.log('🔍 Memverifikasi surat dengan ID:', suratId);
             
             try {
-                // Panggil API verifikasi dari backend
                 const response = await fetch(`/api/surat/verify?id=${suratId}`);
                 const result = await response.json();
                 
                 console.log('📡 Hasil verifikasi:', result);
                 
-                // Cek berdasarkan status_validasi dari data
                 if (result.success && result.data) {
                     const status = result.data.status_validasi;
                     
