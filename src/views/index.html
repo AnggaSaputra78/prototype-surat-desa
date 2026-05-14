@@ -175,6 +175,23 @@
     .toast-notification.error { background: #EF4444; }
     @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
+    /* Edit modal specific fields animation */
+    .edit-specific-section {
+      animation: fadeIn .3s ease;
+    }
+    .field-section-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0369A1;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 8px 12px;
+      background: #EFF6FF;
+      border-left: 3px solid #0369A1;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+
     @media print {
       body * { visibility: hidden; }
       .print-paper, .print-paper * { visibility: visible; }
@@ -348,7 +365,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
                   <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2" for="nomor-surat">Nomor Surat *</label>
-                    <input type="text" id="nomor-surat" class="w-full form-input rounded-lg px-4 py-3" placeholder="Masukkan nomor surat" required>
+                    <input type="number" id="nomor-surat" class="w-full form-input rounded-lg px-4 py-3" placeholder="Masukkan nomor surat" required>
                   </div>
                   <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2" for="tanggal-surat">Tanggal Surat *</label>
@@ -360,12 +377,12 @@
                   <h3 class="font-semibold text-gray-700 mb-3">Data Pemohon / Penerima</h3>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div><label class="block text-sm font-semibold text-gray-700 mb-2" for="nama-pemohon">Nama Lengkap *</label><input type="text" id="nama-pemohon" class="w-full form-input rounded-lg px-4 py-3" required></div>
-                    <div><label class="block text-sm font-semibold text-gray-700 mb-2" for="nik">NIK</label><input type="text" id="nik" class="w-full form-input rounded-lg px-4 py-3" placeholder="Nomor Induk Kependudukan"></div>
+                    <div><label class="block text-sm font-semibold text-gray-700 mb-2" for="nik">NIK</label><input type="number" id="nik" class="w-full form-input rounded-lg px-4 py-3" placeholder="Nomor Induk Kependudukan"></div>
                     <div><label class="block text-sm font-semibold text-gray-700 mb-2" for="tempat-lahir">Tempat Lahir</label><input type="text" id="tempat-lahir" class="w-full form-input rounded-lg px-4 py-3" placeholder="Kota/Kabupaten"></div>
                     <div><label class="block text-sm font-semibold text-gray-700 mb-2" for="tgl-lahir">Tanggal Lahir</label><input type="date" id="tgl-lahir" class="w-full form-input rounded-lg px-4 py-3"></div>
                     <div><label class="block text-sm font-semibold text-gray-700 mb-2" for="jenis-kelamin">Jenis Kelamin</label><select id="jenis-kelamin" class="w-full form-input rounded-lg px-4 py-3"><option value="">Pilih</option><option value="LAKI-LAKI">LAKI-LAKI</option><option value="PEREMPUAN">PEREMPUAN</option></select></div>
                     <div><label class="block text-sm font-semibold text-gray-700 mb-2" for="pekerjaan">Pekerjaan</label><input type="text" id="pekerjaan" class="w-full form-input rounded-lg px-4 py-3" placeholder="Pekerjaan"></div>
-                    <div><label class="block text-sm font-semibold text-gray-700 mb-2" for="no-kk">No. KK</label><input type="text" id="no-kk" class="w-full form-input rounded-lg px-4 py-3" placeholder="Nomor Kartu Keluarga"></div>
+                    <div><label class="block text-sm font-semibold text-gray-700 mb-2" for="no-kk">No. KK</label><input type="number" id="no-kk" class="w-full form-input rounded-lg px-4 py-3" placeholder="Nomor Kartu Keluarga"></div>
                     <div><label class="block text-sm font-semibold text-gray-700 mb-2" for="keperluan">Keperluan</label><input type="text" id="keperluan" class="w-full form-input rounded-lg px-4 py-3" placeholder="Tujuan pembuatan surat"></div>
                     <div class="sm:col-span-2"><label class="block text-sm font-semibold text-gray-700 mb-2" for="alamat">Alamat Lengkap</label><textarea id="alamat" rows="2" class="w-full form-input rounded-lg px-4 py-3" placeholder="Alamat sesuai KTP"></textarea></div>
                   </div>
@@ -498,25 +515,191 @@
     </nav>
   </div>
 
+  <!-- ===================== EDIT MODAL (UPDATED) ===================== -->
   <div id="edit-modal" class="modal-overlay">
-    <div class="modal-panel bg-white rounded-xl shadow-2xl max-w-2xl mx-auto p-5 md:p-6">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl md:text-2xl font-bold">Edit Surat</h2>
-        <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700 p-1" aria-label="Tutup"><i data-lucide="x" class="w-6 h-6"></i></button>
-      </div>
-      <form id="edit-surat-form" class="space-y-4">
-        <input type="hidden" id="edit-id">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div><label class="block text-sm font-semibold mb-2" for="edit-nomor">Nomor Surat</label><input type="text" id="edit-nomor" class="w-full form-input rounded-lg px-3 py-2 bg-gray-100" readonly></div>
-          <div><label class="block text-sm font-semibold mb-2" for="edit-tanggal">Tanggal Surat</label><input type="date" id="edit-tanggal" class="w-full form-input rounded-lg px-3 py-2" required></div>
+    <div class="modal-panel bg-white rounded-xl shadow-2xl max-w-3xl mx-auto p-5 md:p-6">
+      <div class="flex justify-between items-center mb-5 pb-4 border-b border-gray-200">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-amber-100 rounded-lg"><i data-lucide="pencil" class="w-5 h-5 text-amber-600"></i></div>
+          <div>
+            <h2 class="text-xl md:text-2xl font-bold text-gray-800">Edit Surat</h2>
+            <p class="text-xs text-gray-500 mt-0.5">Perbarui data surat sesuai kebutuhan</p>
+          </div>
         </div>
-        <div><label class="block text-sm font-semibold mb-2" for="edit-pemohon">Nama Pemohon</label><input type="text" id="edit-pemohon" class="w-full form-input rounded-lg px-3 py-2" required></div>
-        <div><label class="block text-sm font-semibold mb-2" for="edit-jenis">Jenis Surat</label><select id="edit-jenis" class="w-full form-input rounded-lg px-3 py-2"><option>Surat Keterangan Usaha</option><option>Surat Permohonan Pinjam Lahan</option><option>Surat Keterangan Domisili</option><option>Surat Keterangan Dispensasi</option></select></div>
-        <div><label class="block text-sm font-semibold mb-2" for="edit-isi">Isi Surat</label><textarea id="edit-isi" rows="8" class="w-full form-input rounded-lg px-3 py-2"></textarea></div>
-        <div class="flex flex-col sm:flex-row gap-3 pt-2"><button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold">Simpan</button><button type="button" onclick="closeEditModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold">Batal</button></div>
+        <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-700 p-1.5 hover:bg-gray-100 rounded-lg transition" aria-label="Tutup"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+
+      <form id="edit-surat-form" class="space-y-5">
+        <input type="hidden" id="edit-id">
+
+        <!-- Informasi Dasar -->
+        <div>
+          <div class="field-section-label">Informasi Dasar Surat</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-nomor">Nomor Surat</label>
+              <input type="text" id="edit-nomor" class="w-full form-input rounded-lg px-3 py-2.5 bg-gray-50 text-gray-500 cursor-not-allowed" readonly>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-tanggal">Tanggal Surat *</label>
+              <input type="date" id="edit-tanggal" class="w-full form-input rounded-lg px-3 py-2.5" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- Data Pemohon -->
+        <div>
+          <div class="field-section-label">Data Pemohon / Penerima</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-pemohon">Nama Lengkap *</label>
+              <input type="text" id="edit-pemohon" class="w-full form-input rounded-lg px-3 py-2.5" required>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-nik">NIK</label>
+              <input type="text" id="edit-nik" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Nomor Induk Kependudukan">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-tempat-lahir">Tempat Lahir</label>
+              <input type="text" id="edit-tempat-lahir" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Kota/Kabupaten">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-tgl-lahir">Tanggal Lahir</label>
+              <input type="date" id="edit-tgl-lahir" class="w-full form-input rounded-lg px-3 py-2.5">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-jenis-kelamin">Jenis Kelamin</label>
+              <select id="edit-jenis-kelamin" class="w-full form-input rounded-lg px-3 py-2.5">
+                <option value="">Pilih</option>
+                <option value="LAKI-LAKI">LAKI-LAKI</option>
+                <option value="PEREMPUAN">PEREMPUAN</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-pekerjaan">Pekerjaan</label>
+              <input type="text" id="edit-pekerjaan" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Pekerjaan">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-no-kk">No. KK</label>
+              <input type="text" id="edit-no-kk" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Nomor Kartu Keluarga">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-keperluan">Keperluan</label>
+              <input type="text" id="edit-keperluan" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Tujuan pembuatan surat">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-alamat">Alamat Lengkap</label>
+              <textarea id="edit-alamat" rows="2" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Alamat sesuai KTP"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Jenis Surat -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-jenis">Jenis Surat *</label>
+          <select id="edit-jenis" class="w-full form-input rounded-lg px-3 py-2.5" required>
+            <option value="">Pilih Jenis Surat</option>
+            <option value="Surat Keterangan Usaha">Surat Keterangan Usaha</option>
+            <option value="Surat Permohonan Pinjam Lahan">Surat Permohonan Pinjam Lahan</option>
+            <option value="Surat Keterangan Domisili">Surat Keterangan Domisili</option>
+            <option value="Surat Keterangan Dispensasi">Surat Keterangan Dispensasi</option>
+          </select>
+        </div>
+
+        <!-- FIELD KHUSUS EDIT - Surat Keterangan Usaha -->
+        <div id="edit-usaha-fields" class="hidden edit-specific-section">
+          <div class="field-section-label">Data Usaha</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-tempat-usaha">Tempat Usaha</label>
+              <input type="text" id="edit-tempat-usaha" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Lokasi usaha">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-jenis-usaha">Jenis Usaha</label>
+              <input type="text" id="edit-jenis-usaha" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Contoh: PERTANIAN">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-status-usaha">Status Usaha</label>
+              <input type="text" id="edit-status-usaha" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Contoh: Perseorangan">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-tahun-mulai-usaha">Tahun Mulai Usaha</label>
+              <input type="number" id="edit-tahun-mulai-usaha" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Contoh: 2000">
+            </div>
+          </div>
+        </div>
+
+        <!-- FIELD KHUSUS EDIT - Surat Permohonan Pinjam Lahan -->
+        <div id="edit-permohonan-fields" class="hidden edit-specific-section">
+          <div class="field-section-label">Data Permohonan</div>
+          <div class="grid grid-cols-1 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-instansi-tujuan">Instansi Tujuan</label>
+              <textarea id="edit-instansi-tujuan" rows="2" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Contoh: Bina Lingkungan PT. Semen Indonesia Group"></textarea>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-perihal">Perihal</label>
+                <input type="text" id="edit-perihal" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Perihal surat">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-sifat-surat">Sifat Surat</label>
+                <input type="text" id="edit-sifat-surat" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Contoh: Penting">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-lampiran">Lampiran</label>
+                <input type="text" id="edit-lampiran" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Contoh: -">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-lokasi-objek">Lokasi Objek</label>
+                <input type="text" id="edit-lokasi-objek" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Lokasi tanah/objek">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-isi-permohonan">Isi Permohonan</label>
+              <textarea id="edit-isi-permohonan" rows="4" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Jelaskan isi permohonan secara singkat"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- FIELD KHUSUS EDIT - Surat Keterangan Dispensasi -->
+        <div id="edit-dispensasi-fields" class="hidden edit-specific-section">
+          <div class="field-section-label">Data Dispensasi</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-alasan-dispensasi">Alasan Dispensasi</label>
+              <input type="text" id="edit-alasan-dispensasi" class="w-full form-input rounded-lg px-3 py-2.5" placeholder="Contoh: Ada keluarga meninggal">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-tgl-mulai-dispensasi">Tanggal Mulai</label>
+              <input type="date" id="edit-tgl-mulai-dispensasi" class="w-full form-input rounded-lg px-3 py-2.5">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2" for="edit-tgl-selesai-dispensasi">Tanggal Selesai</label>
+              <input type="date" id="edit-tgl-selesai-dispensasi" class="w-full form-input rounded-lg px-3 py-2.5">
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview Isi Surat (Auto-generated) -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Pratinjau Isi Surat (otomatis)</label>
+          <textarea id="edit-isi-preview" rows="8" class="w-full form-input rounded-lg px-3 py-2.5 bg-gray-50 text-gray-500" readonly placeholder="Isi surat akan tampil otomatis setelah data diisi..."></textarea>
+          <p class="text-xs text-gray-400 mt-1">Isi surat digenerate otomatis dari data di atas. Field ini hanya untuk pratinjau.</p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 pt-2 border-t border-gray-200">
+          <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 transition">
+            <i data-lucide="save" class="w-4 h-4"></i> Simpan Perubahan
+          </button>
+          <button type="button" onclick="closeEditModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 transition">
+            <i data-lucide="x-circle" class="w-4 h-4"></i> Batal
+          </button>
+        </div>
       </form>
     </div>
   </div>
+  <!-- ===================== END EDIT MODAL ===================== -->
 
   <div id="validasi-modal" class="modal-overlay">
     <div class="modal-panel bg-white rounded-xl shadow-2xl max-w-2xl mx-auto p-5 md:p-6">
@@ -671,14 +854,7 @@
 </div>`
       };
 
-      const fieldIds = [
-        'nomor-surat', 'tanggal-surat', 'nama-pemohon', 'nik', 'tempat-lahir', 'tgl-lahir',
-        'jenis-kelamin', 'pekerjaan', 'alamat', 'no-kk', 'keperluan', 'jenis-surat',
-        'tempat-usaha', 'jenis-usaha', 'status-usaha', 'tahun-mulai-usaha', 'instansi-tujuan',
-        'perihal', 'sifat-surat', 'lampiran', 'isi-permohonan', 'lokasi-objek',
-        'alasan-dispensasi', 'tgl-mulai-dispensasi', 'tgl-selesai-dispensasi'
-      ];
-
+      // ---- Helpers ----
       function $(id) { return document.getElementById(id); }
       function refreshIcons() { if (window.lucide) lucide.createIcons(); }
       function escapeHtml(value) {
@@ -939,6 +1115,7 @@
         refreshIcons();
       }
 
+      // ---- Form Buat Surat ----
       function gatherFormData() {
         return {
           nomor_surat: $('nomor-surat').value.trim(),
@@ -1024,24 +1201,13 @@
           isi_surat: finalHTML,
           status_validasi: 'Pending',
           metadata: {
-            nik: data.nik,
-            tempat_lahir: data.tempat_lahir,
-            tgl_lahir: data.tgl_lahir,
-            jenis_kelamin: data.jenis_kelamin,
-            pekerjaan: data.pekerjaan,
-            alamat: data.alamat,
-            no_kk: data.no_kk,
-            keperluan: data.keperluan,
-            tempat_usaha: data.tempat_usaha,
-            jenis_usaha: data.jenis_usaha,
-            status_usaha: data.status_usaha,
-            tahun_mulai_usaha: data.tahun_mulai_usaha,
-            instansi_tujuan: data.instansi_tujuan,
-            perihal: data.perihal,
-            sifat_surat: data.sifat_surat,
-            lampiran: data.lampiran,
-            isi_permohonan: data.isi_permohonan,
-            lokasi_objek: data.lokasi_objek,
+            nik: data.nik, tempat_lahir: data.tempat_lahir, tgl_lahir: data.tgl_lahir,
+            jenis_kelamin: data.jenis_kelamin, pekerjaan: data.pekerjaan, alamat: data.alamat,
+            no_kk: data.no_kk, keperluan: data.keperluan, tempat_usaha: data.tempat_usaha,
+            jenis_usaha: data.jenis_usaha, status_usaha: data.status_usaha,
+            tahun_mulai_usaha: data.tahun_mulai_usaha, instansi_tujuan: data.instansi_tujuan,
+            perihal: data.perihal, sifat_surat: data.sifat_surat, lampiran: data.lampiran,
+            isi_permohonan: data.isi_permohonan, lokasi_objek: data.lokasi_objek,
             alasan_dispensasi: data.alasan_dispensasi,
             tgl_mulai_dispensasi: data.tgl_mulai_dispensasi,
             tgl_selesai_dispensasi: data.tgl_selesai_dispensasi
@@ -1065,36 +1231,166 @@
         }
       });
 
+      // ---- EDIT MODAL (UPDATED LOGIC) ----
+
+      // Show/hide specific field groups in edit modal
+      function updateEditSpecificFields(jenis) {
+        $('edit-usaha-fields').classList.add('hidden');
+        $('edit-permohonan-fields').classList.add('hidden');
+        $('edit-dispensasi-fields').classList.add('hidden');
+
+        if (jenis === 'Surat Keterangan Usaha') $('edit-usaha-fields').classList.remove('hidden');
+        else if (jenis === 'Surat Permohonan Pinjam Lahan') $('edit-permohonan-fields').classList.remove('hidden');
+        else if (jenis === 'Surat Keterangan Dispensasi') $('edit-dispensasi-fields').classList.remove('hidden');
+        // Domisili has no extra fields — only the common ones
+      }
+
+      // Gather all edit form data into an object
+      function gatherEditFormData() {
+        return {
+          nomor_surat: $('edit-nomor').value,
+          tanggal_surat: $('edit-tanggal').value,
+          nama_pemohon: $('edit-pemohon').value.trim(),
+          nik: $('edit-nik').value.trim(),
+          tempat_lahir: $('edit-tempat-lahir').value.trim(),
+          tgl_lahir: $('edit-tgl-lahir').value,
+          jenis_kelamin: $('edit-jenis-kelamin').value,
+          pekerjaan: $('edit-pekerjaan').value.trim(),
+          alamat: $('edit-alamat').value.trim(),
+          no_kk: $('edit-no-kk').value.trim(),
+          keperluan: $('edit-keperluan').value.trim(),
+          jenis_surat: $('edit-jenis').value,
+          tempat_usaha: $('edit-tempat-usaha').value.trim(),
+          jenis_usaha: $('edit-jenis-usaha').value.trim(),
+          status_usaha: $('edit-status-usaha').value.trim(),
+          tahun_mulai_usaha: $('edit-tahun-mulai-usaha').value.trim(),
+          instansi_tujuan: $('edit-instansi-tujuan').value.trim(),
+          perihal: $('edit-perihal').value.trim(),
+          sifat_surat: $('edit-sifat-surat').value.trim(),
+          lampiran: $('edit-lampiran').value.trim(),
+          isi_permohonan: $('edit-isi-permohonan').value.trim(),
+          lokasi_objek: $('edit-lokasi-objek').value.trim(),
+          alasan_dispensasi: $('edit-alasan-dispensasi').value.trim(),
+          tgl_mulai_dispensasi: $('edit-tgl-mulai-dispensasi').value,
+          tgl_selesai_dispensasi: $('edit-tgl-selesai-dispensasi').value
+        };
+      }
+
+      // Update the preview textarea in edit modal
+      function updateEditPreview() {
+        const data = gatherEditFormData();
+        const jenis = data.jenis_surat;
+        if (!jenis) { $('edit-isi-preview').value = ''; return; }
+        const template = templateSuratMap[jenis] || '';
+        const text = stripHtml(replacePlaceholders(template, data));
+        $('edit-isi-preview').value = text.length > 600 ? `${text.substring(0, 600)}...` : text;
+      }
+
+      // Listen to changes in edit form for live preview update
+      $('edit-surat-form').addEventListener('input', function(e) {
+        if (e.target.id !== 'edit-isi-preview') updateEditPreview();
+      });
+
+      // Jenis surat change in edit modal
+      $('edit-jenis').addEventListener('change', function() {
+        updateEditSpecificFields(this.value);
+        updateEditPreview();
+      });
+
       window.openEditModal = (id) => {
         const surat = suratData.find(item => item._id === id);
         if (!surat) return;
+        const meta = surat.metadata || {};
+
         $('edit-id').value = surat._id;
         $('edit-nomor').value = surat.nomor_surat || '';
         $('edit-tanggal').value = surat.tanggal_surat ? String(surat.tanggal_surat).split('T')[0] : '';
         $('edit-pemohon').value = surat.nama_pemohon || '';
         $('edit-jenis').value = surat.jenis_surat || '';
-        $('edit-isi').value = surat.isi_surat || '';
+
+        // Populate common fields from metadata
+        $('edit-nik').value = meta.nik || surat.nik || '';
+        $('edit-tempat-lahir').value = meta.tempat_lahir || surat.tempat_lahir || '';
+        $('edit-tgl-lahir').value = (meta.tgl_lahir || surat.tgl_lahir || '').toString().split('T')[0];
+        $('edit-jenis-kelamin').value = meta.jenis_kelamin || surat.jenis_kelamin || '';
+        $('edit-pekerjaan').value = meta.pekerjaan || surat.pekerjaan || '';
+        $('edit-alamat').value = meta.alamat || surat.alamat || '';
+        $('edit-no-kk').value = meta.no_kk || surat.no_kk || '';
+        $('edit-keperluan').value = meta.keperluan || surat.keperluan || '';
+
+        // Populate Usaha fields
+        $('edit-tempat-usaha').value = meta.tempat_usaha || surat.tempat_usaha || '';
+        $('edit-jenis-usaha').value = meta.jenis_usaha || surat.jenis_usaha || '';
+        $('edit-status-usaha').value = meta.status_usaha || surat.status_usaha || '';
+        $('edit-tahun-mulai-usaha').value = meta.tahun_mulai_usaha || surat.tahun_mulai_usaha || '';
+
+        // Populate Permohonan fields
+        $('edit-instansi-tujuan').value = meta.instansi_tujuan || surat.instansi_tujuan || '';
+        $('edit-perihal').value = meta.perihal || surat.perihal || '';
+        $('edit-sifat-surat').value = meta.sifat_surat || surat.sifat_surat || '';
+        $('edit-lampiran').value = meta.lampiran || surat.lampiran || '';
+        $('edit-isi-permohonan').value = meta.isi_permohonan || surat.isi_permohonan || '';
+        $('edit-lokasi-objek').value = meta.lokasi_objek || surat.lokasi_objek || '';
+
+        // Populate Dispensasi fields
+        $('edit-alasan-dispensasi').value = meta.alasan_dispensasi || surat.alasan_dispensasi || '';
+        $('edit-tgl-mulai-dispensasi').value = (meta.tgl_mulai_dispensasi || surat.tgl_mulai_dispensasi || '').toString().split('T')[0];
+        $('edit-tgl-selesai-dispensasi').value = (meta.tgl_selesai_dispensasi || surat.tgl_selesai_dispensasi || '').toString().split('T')[0];
+
+        // Show/hide specific field groups & update preview
+        updateEditSpecificFields(surat.jenis_surat || '');
+        updateEditPreview();
+
         $('edit-modal').classList.add('active');
         refreshIcons();
       };
+
       window.closeEditModal = () => $('edit-modal').classList.remove('active');
 
       $('edit-surat-form').addEventListener('submit', async (event) => {
         event.preventDefault();
         const id = $('edit-id').value;
-        const data = {
-          nomor_surat: $('edit-nomor').value,
-          nama_pemohon: $('edit-pemohon').value,
-          jenis_surat: $('edit-jenis').value,
-          tanggal_surat: $('edit-tanggal').value,
-          isi_surat: $('edit-isi').value,
-          status_validasi: 'Pending'
+        const formData = gatherEditFormData();
+
+        if (!formData.nama_pemohon || !formData.jenis_surat) {
+          showToast('Nama pemohon dan jenis surat wajib diisi!', 'error');
+          return;
+        }
+
+        // Re-generate the HTML template with updated data
+        const finalHTML = replacePlaceholders(templateSuratMap[formData.jenis_surat] || '', formData);
+
+        const payload = {
+          nomor_surat: formData.nomor_surat,
+          nama_pemohon: formData.nama_pemohon,
+          jenis_surat: formData.jenis_surat,
+          tanggal_surat: formData.tanggal_surat,
+          isi_surat: finalHTML,
+          status_validasi: 'Pending',
+          metadata: {
+            nik: formData.nik, tempat_lahir: formData.tempat_lahir, tgl_lahir: formData.tgl_lahir,
+            jenis_kelamin: formData.jenis_kelamin, pekerjaan: formData.pekerjaan,
+            alamat: formData.alamat, no_kk: formData.no_kk, keperluan: formData.keperluan,
+            tempat_usaha: formData.tempat_usaha, jenis_usaha: formData.jenis_usaha,
+            status_usaha: formData.status_usaha, tahun_mulai_usaha: formData.tahun_mulai_usaha,
+            instansi_tujuan: formData.instansi_tujuan, perihal: formData.perihal,
+            sifat_surat: formData.sifat_surat, lampiran: formData.lampiran,
+            isi_permohonan: formData.isi_permohonan, lokasi_objek: formData.lokasi_objek,
+            alasan_dispensasi: formData.alasan_dispensasi,
+            tgl_mulai_dispensasi: formData.tgl_mulai_dispensasi,
+            tgl_selesai_dispensasi: formData.tgl_selesai_dispensasi
+          }
         };
+
         try {
-          const res = await fetch(`${API_BASE}/update/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+          const res = await fetch(`${API_BASE}/update/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
           const result = await res.json();
           if (result.success) {
-            showToast('Surat diperbarui');
+            showToast('Surat berhasil diperbarui');
             closeEditModal();
             loadData();
           } else {
@@ -1106,6 +1402,7 @@
         }
       });
 
+      // ---- Delete ----
       window.deleteSurat = async (id) => {
         if (!confirm('Yakin hapus surat ini?')) return;
         try {
@@ -1123,6 +1420,7 @@
         }
       };
 
+      // ---- Validasi Modal ----
       window.openValidasiModal = (id) => {
         const surat = suratData.find(item => item._id === id);
         if (!surat) return;
@@ -1169,6 +1467,7 @@
         closeValidasiModal();
       });
 
+      // ---- Preview ----
       window.previewSurat = async (suratId) => {
         const surat = suratData.find(item => item._id === suratId);
         if (!surat) return;
@@ -1197,6 +1496,7 @@
         if (currentPreviewSuratId) await window.exportToPDF(currentPreviewSuratId);
       });
 
+      // ---- PDF Export ----
       window.exportToPDF = async (suratId) => {
         const surat = suratData.find(item => item._id === suratId);
         if (!surat) return;
@@ -1233,6 +1533,7 @@
         }
       };
 
+      // ---- Search & Pagination ----
       $('search-arsip').addEventListener('input', (event) => updateArsipTable(event.target.value));
       $('search-manajemen').addEventListener('input', (event) => {
         currentManajemenPage = 1;
@@ -1252,6 +1553,7 @@
         }
       });
 
+      // ---- Navigation ----
       function showView(view) {
         ['dashboard-view', 'buat-surat-view', 'validasi-view', 'arsip-view', 'manajemen-view'].forEach(id => $(id).classList.add('hidden'));
         $(`${view}-view`).classList.remove('hidden');
@@ -1266,6 +1568,7 @@
         button.addEventListener('click', () => showView(button.dataset.view));
       });
 
+      // ---- Auth ----
       $('login-form').addEventListener('submit', function(event) {
         event.preventDefault();
         currentUser = $('username').value.trim() || 'Admin';
@@ -1277,7 +1580,7 @@
         loadData();
         refreshIcons();
       });
-      
+
       function logout() {
         $('main-app').classList.add('hidden');
         $('main-app').classList.remove('flex', 'flex-col');
